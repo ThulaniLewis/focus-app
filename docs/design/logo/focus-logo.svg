@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="1024" height="1024">
+<defs><clipPath id="badge"><circle cx="100" cy="100" r="96"/></clipPath><clipPath id="sky"><rect x="0" y="0" width="200" height="128"/></clipPath></defs>
+<g clip-path="url(#badge)">
+<rect x="0" y="0" width="200" height="200" fill="#F6E7CC"/>
+<g clip-path="url(#sky)">
+<circle cx="100" cy="112" r="58" fill="#E59A4E"/><circle cx="100" cy="112" r="44" fill="#F6E7CC"/>
+<circle cx="100" cy="112" r="31" fill="#D9775A"/><circle cx="100" cy="112" r="18" fill="#F6E7CC"/>
+<circle cx="100" cy="112" r="9" fill="#B04F3C"/>
+</g>
+<rect x="0" y="128" width="200" height="72" fill="#35676A"/>
+<line x1="62" y1="142" x2="138" y2="142" stroke="#E59A4E" stroke-width="5" stroke-linecap="round"/>
+<line x1="76" y1="156" x2="124" y2="156" stroke="#D9775A" stroke-width="5" stroke-linecap="round"/>
+<line x1="88" y1="170" x2="112" y2="170" stroke="#E59A4E" stroke-width="5" stroke-linecap="round"/>
+<line x1="20" y1="150" x2="44" y2="150" stroke="#8FC1BE" stroke-width="3" stroke-linecap="round"/>
+<line x1="154" y1="164" x2="180" y2="164" stroke="#8FC1BE" stroke-width="3" stroke-linecap="round"/>
+</g></svg>

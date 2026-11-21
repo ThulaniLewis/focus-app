@@ -1,0 +1,60 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# Secrets: never commit these
+src/config.ts
+.env
+.env*
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.keystore
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+credentials.json
+service-account*.json
+.claude/settings.local.json
+supabase/.temp/
+supabase/.branches/
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Build output
+build/
+**/android/build/
+**/ios/build/
+*.apk
+*.aab
+*.ipa
+
+# Native
+.kotlin/
+*.orig.*
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android

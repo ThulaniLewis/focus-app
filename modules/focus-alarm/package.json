@@ -1,0 +1,7 @@
+{
+  "name": "focus-alarm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Focus's own wake-up alarm: an exact alarm that rings loudly and opens full screen (groundwork for Phase 6).",
+  "main": "index.ts"
+}

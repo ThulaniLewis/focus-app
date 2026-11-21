@@ -1,0 +1,299 @@
+{
+ "name": "Focus",
+ "version": 1,
+ "color": {
+  "themes": [
+   {
+    "id": "light",
+    "name": "Light"
+   },
+   {
+    "id": "dark",
+    "name": "Dark"
+   }
+  ],
+  "tokens": [
+   {
+    "name": "bg",
+    "value": {
+     "light": "#FBF3F4",
+     "dark": "#1C1719"
+    },
+    "usage": "Page background. Soft blush by day, warm charcoal at night. Never pure white or pure black."
+   },
+   {
+    "name": "surface",
+    "value": {
+     "light": "#FFFBFB",
+     "dark": "#261F22"
+    },
+    "usage": "Cards and lists on bg."
+   },
+   {
+    "name": "surface-raised",
+    "value": {
+     "light": "#FFFFFF",
+     "dark": "#30272A"
+    },
+    "usage": "Bottom bar, sheets and anything floating above a surface."
+   },
+   {
+    "name": "surface-sunken",
+    "value": {
+     "light": "#F3E6E9",
+     "dark": "#141012"
+    },
+    "usage": "Quiet wells inside a card, such as a quoted line."
+   },
+   {
+    "name": "line",
+    "value": {
+     "light": "#EBD9DD",
+     "dark": "#3D3236"
+    },
+    "usage": "Dividers between rows. Decorative only, never the sole edge of a control."
+   },
+   {
+    "name": "ink",
+    "value": {
+     "light": "#3A2A2F",
+     "dark": "#F1E7E9"
+    },
+    "usage": "Main text on bg, surface and surface-raised."
+   },
+   {
+    "name": "ink-muted",
+    "value": {
+     "light": "#6E5A60",
+     "dark": "#BBA8AE"
+    },
+    "usage": "Secondary text and times on bg, surface, surface-raised and surface-sunken."
+   },
+   {
+    "name": "primary",
+    "value": {
+     "light": "#9C4F67",
+     "dark": "#E3A9BA"
+    },
+    "usage": "The one brand colour, a dusty rose. Main buttons, the mic button, the leave by card, active tab, links on bg and surface."
+   },
+   {
+    "name": "on-primary",
+    "value": {
+     "light": "#FFFFFF",
+     "dark": "#2E1520"
+    },
+    "usage": "Text and icons on primary."
+   },
+   {
+    "name": "primary-soft",
+    "value": {
+     "light": "#F4DDE3",
+     "dark": "#43262F"
+    },
+    "usage": "Calm tint for chips, icon tiles and selected rows."
+   },
+   {
+    "name": "primary-strong",
+    "value": {
+     "light": "#6E2F45",
+     "dark": "#F2CBD6"
+    },
+    "usage": "Text and icons on primary-soft."
+   },
+   {
+    "name": "nudge-soft",
+    "value": {
+     "light": "#FCE6D8",
+     "dark": "#3D2A1E"
+    },
+    "usage": "Background of gentle nudges: a goal gone quiet, something to grab, a restart offer."
+   },
+   {
+    "name": "nudge-ink",
+    "value": {
+     "light": "#6B3A1E",
+     "dark": "#F5CDB2"
+    },
+    "usage": "Text and buttons on nudge-soft."
+   },
+   {
+    "name": "caution",
+    "value": {
+     "light": "#8F4636",
+     "dark": "#E0A394"
+    },
+    "usage": "Muted clay for delete and other actions that cannot be undone. Text or icon on bg. Never used for missed tasks."
+   },
+   {
+    "name": "caution-soft",
+    "value": {
+     "light": "#F3DFD9",
+     "dark": "#40261F"
+    },
+    "usage": "Background of a delete confirmation."
+   },
+   {
+    "name": "caution-ink",
+    "value": {
+     "light": "#6E3226",
+     "dark": "#F0C4B8"
+    },
+    "usage": "Text on caution-soft."
+   },
+   {
+    "name": "private",
+    "value": {
+     "light": "#3A2A2F",
+     "dark": "#F1E7E9"
+    },
+    "usage": "Phone only badges and the private reminder card on tablets."
+   },
+   {
+    "name": "on-private",
+    "value": {
+     "light": "#FFFFFF",
+     "dark": "#1C1719"
+    },
+    "usage": "Text and icons on private."
+   }
+  ]
+ },
+ "type": {
+  "families": {
+   "display": "\"Lexend\", system-ui, sans-serif",
+   "body": "\"Atkinson Hyperlegible Next\", \"Atkinson Hyperlegible\", system-ui, sans-serif"
+  },
+  "groups": [
+   {
+    "name": "Display",
+    "family": "display",
+    "styles": [
+     {
+      "name": "wall-clock",
+      "fontSize": "112px",
+      "lineHeight": "108px",
+      "fontWeight": 600
+     },
+     {
+      "name": "display",
+      "fontSize": "44px",
+      "lineHeight": "48px",
+      "fontWeight": 600
+     },
+     {
+      "name": "title",
+      "fontSize": "28px",
+      "lineHeight": "34px",
+      "fontWeight": 600
+     },
+     {
+      "name": "heading",
+      "fontSize": "18px",
+      "lineHeight": "24px",
+      "fontWeight": 600
+     }
+    ]
+   },
+   {
+    "name": "Text",
+    "family": "body",
+    "styles": [
+     {
+      "name": "wall-body",
+      "fontSize": "22px",
+      "lineHeight": "30px",
+      "fontWeight": 500
+     },
+     {
+      "name": "body",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "fontWeight": 400
+     },
+     {
+      "name": "body-strong",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "fontWeight": 600
+     },
+     {
+      "name": "label",
+      "fontSize": "13px",
+      "lineHeight": "18px",
+      "fontWeight": 600
+     },
+     {
+      "name": "caption",
+      "fontSize": "12px",
+      "lineHeight": "16px",
+      "fontWeight": 500
+     }
+    ]
+   }
+  ]
+ },
+ "spacing": {
+  "tokens": [
+   {
+    "name": "space-1",
+    "value": "4px",
+    "usage": "Gap between a label and its value."
+   },
+   {
+    "name": "space-2",
+    "value": "8px",
+    "usage": "Gap between chips and between buttons."
+   },
+   {
+    "name": "space-3",
+    "value": "12px",
+    "usage": "Gap between an icon or checkbox and its text."
+   },
+   {
+    "name": "space-4",
+    "value": "16px",
+    "usage": "Card padding and gap between cards."
+   },
+   {
+    "name": "space-5",
+    "value": "20px",
+    "usage": "Phone screen side padding."
+   },
+   {
+    "name": "space-6",
+    "value": "24px",
+    "usage": "Gap between sections. Gap between tablet columns."
+   },
+   {
+    "name": "space-8",
+    "value": "32px",
+    "usage": "Tablet screen padding."
+   }
+  ]
+ },
+ "radius": {
+  "tokens": [
+   {
+    "name": "radius-sm",
+    "value": "12px",
+    "usage": "Buttons and small wells."
+   },
+   {
+    "name": "radius-md",
+    "value": "18px",
+    "usage": "Cards and lists on the phone."
+   },
+   {
+    "name": "radius-lg",
+    "value": "24px",
+    "usage": "Hero cards on the phone, all cards on tablets."
+   },
+   {
+    "name": "radius-pill",
+    "value": "999px",
+    "usage": "Chips, badges and the mic button."
+   }
+  ]
+ }
+}

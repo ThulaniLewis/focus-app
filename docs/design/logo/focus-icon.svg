@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="1024" height="1024">
+<defs><clipPath id="sky"><rect x="0" y="0" width="200" height="128"/></clipPath></defs>
+<rect x="0" y="0" width="200" height="200" fill="#F6E7CC"/>
+<g clip-path="url(#sky)">
+<circle cx="100" cy="112" r="56" fill="#E59A4E"/><circle cx="100" cy="112" r="42" fill="#F6E7CC"/>
+<circle cx="100" cy="112" r="30" fill="#D9775A"/><circle cx="100" cy="112" r="17" fill="#F6E7CC"/>
+<circle cx="100" cy="112" r="9" fill="#B04F3C"/>
+</g>
+<rect x="0" y="128" width="200" height="72" fill="#35676A"/>
+<line x1="64" y1="144" x2="136" y2="144" stroke="#E59A4E" stroke-width="6" stroke-linecap="round"/>
+<line x1="80" y1="160" x2="120" y2="160" stroke="#D9775A" stroke-width="6" stroke-linecap="round"/>
+</svg>
