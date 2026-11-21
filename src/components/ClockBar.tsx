@@ -11,7 +11,10 @@ import { T } from './ui';
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export function ClockBar() {
+/** A small extra line under the date (Today puts the weather here). */
+export type ClockNote = { text: string; onPress?: () => void };
+
+export function ClockBar({ note }: { note?: ClockNote | null }) {
   const now = useNow(1000);
   const { state } = useStore();
   const c = useColors();
@@ -38,6 +41,20 @@ export function ClockBar() {
           </T>
         </View>
       </View>
+
+      {note ? (
+        <Pressable
+          onPress={note.onPress}
+          disabled={!note.onPress}
+          accessibilityRole={note.onPress ? 'button' : 'text'}
+          accessibilityLabel={note.onPress ? `${note.text}. Opens Settings` : note.text}
+          style={{ alignSelf: 'flex-end', maxWidth: '100%' }}
+        >
+          <T v="caption" muted numberOfLines={2} style={{ textAlign: 'right' }}>
+            {note.text}
+          </T>
+        </Pressable>
+      ) : null}
 
       {anchor && inMin !== null && (
         <View

@@ -7,7 +7,7 @@ import { dashFits, DASH_MIN_WIDTH_CHOSEN, parseRole, roleFromScreen } from '../s
 import { applyRemote, localRows, toPush, afterPush, type Row } from '../src/lib/sync';
 import { dayEndLine, slug } from '../src/lib/time';
 import { DEFAULT_SETTINGS, DEFAULT_SPACES, type State } from '../src/lib/types';
-import { findTown, parseForecast, weatherNote } from '../src/lib/weather';
+import { findTown, nextLeaveAt, parseForecast, phoneWeatherLine, weatherNote } from '../src/lib/weather';
 
 const state = (extra: Partial<State> = {}, settings: Partial<State['settings']> = {}): State => ({
   tasks: [], notes: [], spaces: DEFAULT_SPACES, checkins: [], settings: { ...DEFAULT_SETTINGS, ...settings }, ...extra,
@@ -128,4 +128,23 @@ test('the Dash shows for the kitchen tablet in landscape, never on the phone', (
   assert.equal(dashFits('phone', 1280, 800), false);
   assert.equal(dashFits('tablet', 800, 600), false);
   assert.equal(dashFits('tablet', DASH_MIN_WIDTH_CHOSEN, 600, true), true); // she chose it herself
+});
+
+// ---- Weather on the phone's Today ----
+
+test('phone Today: one weather line under the date, same words as the Dash', () => {
+  const weather = { temp: 11, high: 13, low: 6, summary: 'rain from 17:30', rainFrom: new Date('2026-11-20T17:30'), fetchedAt: 0 };
+  assert.equal(phoneWeatherLine({ kind: 'ok', weather }, new Date('2026-11-20T17:30')), '11°, rain from 17:30. Take a coat when you leave at 17:30');
+  assert.equal(phoneWeatherLine({ kind: 'ok', weather: { ...weather, rainFrom: null, summary: 'dry for now' } }, null), '11°, dry for now. High 13°, low 6°');
+  assert.equal(phoneWeatherLine({ kind: 'no-town' }, null), 'Set your town in Settings');
+  assert.equal(phoneWeatherLine({ kind: 'error', message: 'offline' }, null), 'Weather unavailable');
+  assert.equal(phoneWeatherLine({ kind: 'loading' }, null), null);
+});
+
+test('the coat is for the next time she leaves today, not one already gone', () => {
+  const now = new Date('2026-11-20T15:00');
+  const gone = { leaveAt: new Date('2026-11-20T07:50') };
+  const later = { leaveAt: new Date('2026-11-20T16:55') };
+  assert.equal(nextLeaveAt([gone, { done: true, leaveAt: new Date('2026-11-20T16:00') }, later], now), later.leaveAt);
+  assert.equal(nextLeaveAt([gone], now), null);
 });

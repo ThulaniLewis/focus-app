@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../lib/store';
 import { radius, space, type, useColors } from '../theme';
 import { router } from 'expo-router';
-import { ClockBar } from './ClockBar';
+import { ClockBar, type ClockNote } from './ClockBar';
 import { Icon } from './Icon';
 import { claimHighlight, useHighlighted } from '../lib/highlight';
 
@@ -39,13 +39,13 @@ export function T({ v = 'body', muted, color, style, ...rest }: TextProps & { v?
   return <Text {...rest} style={[variants[v], { color: color ?? (muted ? c.inkMuted : c.ink) }, style]} />;
 }
 
-export function Screen({ children, clock = true }: { children: React.ReactNode; clock?: boolean }) {
+export function Screen({ children, clock = true, clockNote }: { children: React.ReactNode; clock?: boolean; clockNote?: ClockNote | null }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const scroll = useRef<any>(null);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      {clock && <ClockBar />}
+      {clock && <ClockBar note={clockNote} />}
       <ScrollCtx.Provider value={scroll}>
       <ScrollView
         ref={scroll}

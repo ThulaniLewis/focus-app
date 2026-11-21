@@ -10,7 +10,7 @@ export type Feature = { id: FeatureId; name: string; about: string };
 /** In the order they show in Settings. Names match the mockups' titles. */
 export const FEATURES: Feature[] = [
   { id: 'sleep', name: 'Sleep', about: 'Reads last night from Health Connect and offers a lighter day after a short night. Phone only.' },
-  { id: 'weather', name: 'Weather on the Dash', about: 'Shows the weather for your town on the tablet. Only the town is sent to Open-Meteo, never where you are.' },
+  { id: 'weather', name: 'Weather', about: 'Shows the weather for your town under the date on Today, and on the tablet Dash. Only the town is sent to Open-Meteo, never where you are.' },
   { id: 'punctuality', name: 'On time or late', about: 'Asks how a drop-off or appointment went, and suggests a new leave-by time if you keep running late.' },
 ];
 

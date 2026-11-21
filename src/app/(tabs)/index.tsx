@@ -16,7 +16,9 @@ import { clearLastCrash, readLastCrash } from '../../lib/crash';
 import { calendarAllowed, checkDiary, type DiaryCheck, useDiary } from '../../lib/calendar';
 import { useNow, useStore } from '../../lib/store';
 import { radius, space, useColors } from '../../theme';
-import { dayKey, fmtTime, slug, tasksFor, wakeFor, isDoneOn } from '../../lib/time';
+import { agendaFor, dayKey, fmtTime, slug, tasksFor, wakeFor, isDoneOn } from '../../lib/time';
+import { useWeather } from '../../components/WeatherCard';
+import { nextLeaveAt, phoneWeatherLine } from '../../lib/weather';
 import { useDashMode } from '../../lib/device';
 import { TabletDash } from '../../components/TabletDash';
 import { DAY_NAMES, greeting, openInRoom, roomsByFloor, savSaturday } from '../../lib/views';
@@ -56,9 +58,13 @@ function TodayList() {
   const shopping = state.spaces.find((s) => s.kind === 'shopping');
   const toBuy = shopping ? state.tasks.filter((t) => t.spaceId === shopping.id && !t.done).length : 0;
   const savAway = savSaturday(events, today, state.settings)?.away;
+  // The same forecast and words as the Dash, as one line under the date.
+  const weatherView = useWeather(state.settings.weatherPlace, featureOn(state.settings, 'weather'));
+  const weatherLine = weatherView ? phoneWeatherLine(weatherView, nextLeaveAt(agendaFor(state, today), now)) : null;
+  const clockNote = weatherLine ? { text: weatherLine, onPress: weatherView?.kind === 'no-town' ? () => router.navigate('/settings') : undefined } : null;
 
   return (
-    <Screen>
+    <Screen clockNote={clockNote}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flex: 1 }}>
           <T v="label" muted>{DAY_NAMES[now.getDay()].toUpperCase()}</T>

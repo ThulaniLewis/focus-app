@@ -97,6 +97,22 @@ export type WeatherView =
   | { kind: 'loading' }
   | { kind: 'error'; message: string };
 
+/**
+ * The phone's one line under the date: the same words as the Dash card, joined up.
+ * "11°, rain from 17:30. Take a coat when you leave at 17:30". Null while it's still loading.
+ */
+export function phoneWeatherLine(v: WeatherView, leaveAt: Date | null | undefined): string | null {
+  if (v.kind === 'ok') return `${v.weather.temp}°, ${v.weather.summary}. ${weatherAdvice(v.weather, leaveAt)}`;
+  if (v.kind === 'loading') return null;
+  return weatherNote(v).title;
+}
+
+/** The next time she has to leave today, if any (for "take a coat"). */
+export function nextLeaveAt(agenda: { leaveAt?: Date; done?: boolean }[], now: Date): Date | null {
+  const next = agenda.find((a) => !a.done && a.leaveAt && a.leaveAt.getTime() >= now.getTime() - 60000);
+  return next?.leaveAt ?? null;
+}
+
 export function weatherNote(v: Exclude<WeatherView, { kind: 'ok' }>): { title: string; detail: string } {
   if (v.kind === 'no-town') return { title: 'Set your town in Settings', detail: 'Weather needs a town. Only the town name is sent.' };
   if (v.kind === 'loading') return { title: 'Checking the weather…', detail: '' };
