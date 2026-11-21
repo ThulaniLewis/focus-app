@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Icon } from '../../components/Icon';
@@ -7,7 +7,9 @@ import { Button, Card, Header, Screen, Section, T } from '../../components/ui';
 import { calendarAllowed, writeCalendarName } from '../../lib/calendar';
 import { FEATURES, featureOn, switchFeature } from '../../lib/features';
 import { LOOKS } from '../../lib/look';
-import { geocodeUrl, parsePlace } from '../../lib/weather';
+import { findTown } from '../../lib/weather';
+import { useDashMode, useDeviceRole } from '../../lib/device';
+import { setDeviceRole } from '../../lib/deviceRole';
 import type { Floor, Room } from '../../lib/types';
 import { useStore } from '../../lib/store';
 import { font, radius, space, useColors } from '../../theme';
@@ -49,8 +51,12 @@ export default function Settings() {
   useEffect(() => {
     writeCalendarName().then(setCalName);
   }, [s.writeCalendar, s.readCalendar]);
+  const dash = useDashMode();
   const ratio = estimateRatio(state.tasks);
   const timed = state.tasks.filter((t) => t.done && t.actualMin && t.estimateMin).length;
+
+  // On the kitchen tablet's Dash, Settings is the Dash-style panel, never this phone layout.
+  if (dash) return <Redirect href="/tablet-settings" />;
 
   const row = { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.line, paddingVertical: space[2] };
 
@@ -89,6 +95,10 @@ export default function Settings() {
           </View>
           <T v="caption" muted>Match phone goes dark from wind down.</T>
         </Card>
+      </Section>
+
+      <Section title="This device" hint="on this device only">
+        <DeviceRoleCard />
       </Section>
 
       <Section title="Account">
@@ -276,6 +286,36 @@ export default function Settings() {
   );
 }
 
+/** Which device this is. The kitchen tablet is a shared screen: private things stay off it. */
+function DeviceRoleCard() {
+  const role = useDeviceRole();
+  const c = useColors();
+  const opts = [
+    { id: 'phone' as const, label: 'This phone', about: 'Everything, including private spaces' },
+    { id: 'tablet' as const, label: 'Kitchen tablet', about: 'Shared screen: Just for me, Money and sleep hidden' },
+  ];
+  return (
+    <Card>
+      {opts.map((o) => (
+        <Pressable
+          key={o.id}
+          onPress={() => setDeviceRole(o.id)}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: role === o.id }}
+          accessibilityLabel={`${o.label}. ${o.about}`}
+          style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: space[3] }}
+        >
+          <View style={{ flex: 1 }}>
+            <T v="body">{o.label}</T>
+            <T v="caption" muted>{o.about}</T>
+          </View>
+          {role === o.id ? <Icon name="check" size={20} color={c.primary} /> : null}
+        </Pressable>
+      ))}
+    </Card>
+  );
+}
+
 /** The town for the Dash's weather. Only the town goes to Open-Meteo, as a rough position. */
 export function WeatherTown() {
   const { state, updateSettings } = useStore();
@@ -284,15 +324,10 @@ export function WeatherTown() {
   const [msg, setMsg] = useState<string | null>(null);
   const find = async () => {
     setMsg(null);
-    try {
-      const r = await fetch(geocodeUrl(town));
-      const p = r.ok ? parsePlace(await r.json(), town) : null;
-      if (!p) return setMsg(`Couldn't find "${town.trim()}". Try the nearest big town.`);
-      updateSettings({ weatherPlace: p });
-      setMsg(`Weather for ${p.name}.`);
-    } catch {
-      setMsg("Couldn't reach the weather service. Check you're online.");
-    }
+    const r = await findTown(town);
+    if ('error' in r) return setMsg(r.error);
+    updateSettings({ weatherPlace: r.place });
+    setMsg(`Weather for ${r.place.name}.`);
   };
   return (
     <Card>

@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { featureOn } from '../lib/features';
-import { useWeather, WeatherCard } from './WeatherCard';
+import { useWeather, WeatherSlot } from './WeatherCard';
 import { useNow, useStore } from '../lib/store';
 import { isPrivateSpace } from '../lib/sync';
 import { font, withAlpha } from '../theme';
@@ -244,7 +244,7 @@ export function TabletDash() {
           </View>
           {weather ? (
             <View style={{ flex: 1, marginHorizontal: 24, alignSelf: 'center' }}>
-              <WeatherCard weather={weather} leaveAt={m.leave?.leaveAt} />
+              <WeatherSlot view={weather} leaveAt={m.leave?.leaveAt} />
             </View>
           ) : null}
           <View style={{ alignItems: 'flex-end', gap: 10 }}>

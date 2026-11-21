@@ -1,21 +1,20 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
-import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { DictationBox } from '../../components/Dictation';
+import { useDictation } from '../../lib/useDictation';
 import { showSheet } from '../../components/Sheet';
-import { claimMic, micOwner, releaseMic } from '../../lib/mic';
 import { Icon } from '../../components/Icon';
 import { roomName } from '../../components/TaskRow';
-import { Button, Card, Check, Chip, IconButton, Screen, Section, T } from '../../components/ui';
+import { Button, Card, Check, Chip, Screen, Section, T } from '../../components/ui';
 import { ClaudeError, type DumpResult, type ParsedItem, parseDump } from '../../lib/claude';
 import { type JobRef, openJobs } from '../../lib/leftovers';
 import { isTabletDevice } from '../../lib/device';
 import { isPrivateSpace } from '../../lib/sync';
 import { useStore } from '../../lib/store';
-import { font, radius, space, useColors } from '../../theme';
+import { space, useColors } from '../../theme';
 import { dayKey, fmtTime, parseLocal } from '../../lib/time';
 import { DAY_SHORT } from '../../lib/views';
-import { noteContext } from '../../lib/screens';
 
 function describeWhen(at?: string, repeatDays?: number[]) {
   if (!at) return undefined;
@@ -28,23 +27,17 @@ function describeWhen(at?: string, repeatDays?: number[]) {
   return `${DAY_SHORT[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1} ${fmtTime(d)}`;
 }
 
-const BARS = 24;
-
 export default function Dump() {
   const { user, state, addItems, addNotes, markJobs, batch, logEvent } = useStore();
-  // "Note for Claude" from the dev report: saved as said, with the screen she came from. No Claude call.
-  const params = useLocalSearchParams<{ mode?: string; from?: string }>();
-  const noteMode = params.mode === 'note';
   const c = useColors();
-  const [text, setText] = useState('');
-  const [interim, setInterim] = useState('');
-  const [listening, setListening] = useState(false);
-  const [levels, setLevels] = useState<number[]>(() => Array(BARS).fill(0));
-  const before = useRef('');
-  const pending = useRef(''); // words heard but not yet confirmed final when you tapped the tick
-  const ignoring = useRef(false); // after cancel, drop anything still on its way
+  // The mic. The tick stops listening and sends what was said straight to Claude.
+  const [sortError, setSortError] = useState<string | null>(null);
+  const sortRef = useRef<(said: string) => void>(() => {});
+  const d = useDictation('dump', (final) => sortRef.current(final), () => setSortError(null));
+  const { text, setText } = d;
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const error = sortError ?? d.error;
+  const setError = (m: string | null) => { setSortError(m); if (!m) d.setError(null); };
   const [result, setResult] = useState<DumpResult | null>(null);
   const [items, setItems] = useState<(ParsedItem & { keep: boolean })[]>([]);
   // The feedback loop: Focus can ask a question before showing the list.
@@ -53,74 +46,6 @@ export default function Dump() {
   const [waiting, setWaiting] = useState<DumpResult | null>(null);
   const jobsRef = useRef<JobRef[]>([]);
   const [jobMarks, setJobMarks] = useState<{ id: string; title: string; mark: 'done' | 'started' | 'leave' }[]>([]);
-
-  const join = (a: string, b: string) => (a.trim() ? `${a.trim()} ${b.trim()}` : b.trim());
-
-  useSpeechRecognitionEvent('start', () => micOwner() === 'dump' && setListening(true));
-  useSpeechRecognitionEvent('end', () => {
-    if (micOwner() !== 'dump') return;
-    releaseMic('dump');
-    if (pending.current && !ignoring.current) {
-      const left = pending.current;
-      setText((t) => join(t, left));
-    }
-    pending.current = '';
-    setListening(false);
-    setInterim('');
-    setLevels(Array(BARS).fill(0));
-  });
-  useSpeechRecognitionEvent('result', (e) => {
-    if (micOwner() !== 'dump') return;
-    if (ignoring.current) return;
-    const said = e.results[0]?.transcript ?? '';
-    if (e.isFinal) {
-      pending.current = '';
-      setText((t) => join(t, said));
-      setInterim('');
-    } else setInterim(said);
-  });
-  useSpeechRecognitionEvent('volumechange', (e) => {
-    if (micOwner() !== 'dump') return;
-    const v = Math.max(0, Math.min(1, (e.value + 2) / 12));
-    setLevels((l) => [...l.slice(1), v]);
-  });
-  useSpeechRecognitionEvent('error', (e) => {
-    if (micOwner() !== 'dump') return;
-    if (e.error === 'no-speech' || e.error === 'aborted') return;
-    setError(e.error === 'not-allowed' ? 'Focus needs the microphone. Allow it in your phone settings, or type instead.' : `The mic stopped (${e.message || e.error}). Your words so far are kept.`);
-  });
-
-  const startMic = async () => {
-    setError(null);
-    try {
-      const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      if (!perm.granted) return setError('Focus needs the microphone. Allow it in your phone settings, or type instead.');
-      before.current = text;
-      claimMic('dump');
-      ignoring.current = false;
-      pending.current = '';
-      ExpoSpeechRecognitionModule.start({
-        lang: 'en-GB',
-        interimResults: true,
-        continuous: true,
-        addsPunctuation: true,
-        volumeChangeEventOptions: { enabled: true, intervalMillis: 90 },
-      });
-    } catch {
-      setError("The mic isn't available here. Type instead, or use the mic on your keyboard.");
-    }
-  };
-  const keepMic = () => {
-    pending.current = interim;
-    ExpoSpeechRecognitionModule.stop();
-  };
-  const cancelMic = () => {
-    ignoring.current = true;
-    pending.current = '';
-    ExpoSpeechRecognitionModule.abort();
-    setText(before.current);
-    setInterim('');
-  };
 
   const show = (r: DumpResult) => {
     setResult(r);
@@ -134,15 +59,18 @@ export default function Dump() {
     setWaiting(null);
   };
 
-  const sort = async () => {
-    if (!user) return setError('Sign in once first. Tap the gear on Today.');
+  const sort = async (said: string = text) => {
+    if (busy) return;
+    const sentText = said.trim();
+    if (!sentText) return setError('There is nothing to send yet. Tap the mic and talk, or type.');
+    if (!user) return setError('Not signed in. Sign in with your email in Settings (the gear on Today), then tap Sort it.');
     setBusy(true);
     setError(null);
     try {
       const now = new Date();
       if (!turns.length) jobsRef.current = openJobs(state, undefined, now);
-      const next = [...turns, { q: question ?? undefined, said: text.trim() }];
-      const r = await parseDump(text, state.settings, state.spaces, now, { jobs: jobsRef.current, turns: next });
+      const next = [...turns, { q: question ?? undefined, said: sentText }];
+      const r = await parseDump(sentText, state.settings, state.spaces, now, { jobs: jobsRef.current, turns: next });
       if (r.question && next.length < 3) {
         setTurns(next);
         setQuestion(r.question);
@@ -153,11 +81,15 @@ export default function Dump() {
         show(r);
       }
     } catch (e) {
-      setError(e instanceof ClaudeError ? e.message : 'Something went wrong sorting that. Your words are still here, try again.');
+      setError(e instanceof ClaudeError ? e.message : `Something went wrong sorting that: ${String((e as any)?.message ?? e)}. Your words are still here, try again.`);
     } finally {
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    sortRef.current = sort;
+  });
 
   const reset = () => {
     setText('');
@@ -294,23 +226,9 @@ export default function Dump() {
     );
   }
 
-  const shown = interim ? join(text, interim) : text;
-
-  const saveNote = () => {
-    const from = params.from || 'Dev report';
-    logEvent({ at: new Date().toISOString(), kind: 'note', text: text.trim(), screen: from, context: noteContext(state, new Date(), isTabletDevice() ? 'tablet' : 'phone') });
-    setText('');
-    router.back();
-  };
-
   return (
     <Screen>
-      {noteMode ? (
-        <>
-          <T v="title">Note for Claude</T>
-          <T v="body" muted>{`Saves what you say, plus the screen you're on (${params.from || 'Dev report'}). It goes in the dev report, not your lists.`}</T>
-        </>
-      ) : question ? (
+      {question ? (
         <>
           <T v="label" muted>QUICK QUESTION</T>
           <T v="title">{question}</T>
@@ -319,54 +237,14 @@ export default function Dump() {
       ) : (
         <>
           <T v="title">What's on your mind?</T>
-          <T v="body" muted>Tap the mic and just talk. New things, or what you've done and what's left. Tap the tick when you're done.</T>
+          <T v="body" muted>Tap the mic and just talk. New things, or what you've done and what's left. Tap the tick when you're done and Focus sorts it.</T>
         </>
       )}
-      <TextInput
-        value={shown}
-        onChangeText={(t) => !listening && setText(t)}
-        editable={!listening}
-        multiline
-        placeholder="Toilet roll and bananas, nursery drop 8:15 tomorrow, chase the Barclays application, dentist Thursday 2pm…"
-        placeholderTextColor={c.inkMuted}
-        textAlignVertical="top"
-        style={{
-          minHeight: 180,
-          backgroundColor: c.surface,
-          borderRadius: radius.md,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: listening ? c.primary : c.line,
-          padding: space[4],
-          color: c.ink,
-          fontFamily: font.body,
-          fontSize: 18,
-          lineHeight: 26,
-        }}
+      <DictationBox
+        d={d}
+        placeholder="Toilet roll and bananas, nursery drop 08:15 tomorrow, chase the Barclays application, dentist Thursday 14:00…"
+        doneLabel="Done talking, sort it"
       />
-
-      {listening ? (
-        <View style={{ backgroundColor: c.surface, borderRadius: radius.pill, flexDirection: 'row', alignItems: 'center', padding: space[2], gap: space[2], borderWidth: StyleSheet.hairlineWidth, borderColor: c.line }}>
-          <IconButton name="x" label="Cancel, throw away what I just said" tone="quiet" onPress={cancelMic} size={48} />
-          <View style={{ flex: 1, height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
-            {levels.map((l, i) => (
-              <View key={i} style={{ width: 4, borderRadius: 2, height: 4 + l * 36, backgroundColor: c.primary, opacity: 0.4 + l * 0.6 }} />
-            ))}
-          </View>
-          <IconButton name="check" label="Done talking, keep it" tone="primary" onPress={keepMic} size={48} />
-        </View>
-      ) : (
-        <View style={{ alignItems: 'center', gap: space[2] }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Start talking"
-            onPress={startMic}
-            style={({ pressed }) => ({ width: 84, height: 84, borderRadius: 42, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}
-          >
-            <Icon name="mic" size={34} color={c.onPrimary} />
-          </Pressable>
-          <T v="caption" muted>{text ? 'Tap to add more' : 'Tap to talk'}</T>
-        </View>
-      )}
 
       {error ? (
         <Card tone="nudge">
@@ -380,12 +258,12 @@ export default function Dump() {
           <T v="body" muted>Sorting it out…</T>
         </View>
       ) : (
-        !listening && (
+        !d.listening && (
           <View style={{ gap: space[2] }}>
-            {noteMode ? <Button label="Save note" onPress={saveNote} disabled={!text.trim()} /> : <Button label={question ? 'Answer' : 'Sort it'} onPress={sort} disabled={!text.trim()} />}
+            <Button label={question ? 'Answer' : 'Sort it'} onPress={() => sort()} disabled={!text.trim()} />
             {question && waiting ? <Button kind="quiet" label="Skip the question" onPress={() => show(waiting)} /> : null}
             {question ? <Button kind="quiet" label="Start again" onPress={reset} /> : null}
-            {text && !question && !noteMode ? <Button kind="quiet" label="Clear" onPress={() => setText('')} /> : null}
+            {text && !question ? <Button kind="quiet" label="Clear" onPress={() => setText('')} /> : null}
           </View>
         )
       )}

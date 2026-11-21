@@ -4,7 +4,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useNow, useStore } from '../lib/store';
 import { radius, space, useColors } from '../theme';
-import { dayKey, elapsedSec, fmtDuration, fmtElapsed, fmtTime, minutesBetween, minutesLeftToday, nextAnchor, roomNameOf } from '../lib/time';
+import { dayEndLine, dayKey, elapsedSec, fmtDuration, fmtElapsed, fmtTime, minutesBetween, minutesLeftToday, nextAnchor, roomNameOf } from '../lib/time';
 import { openRoundStop, openStopFlow } from './Session';
 import { T } from './ui';
 
@@ -34,7 +34,7 @@ export function ClockBar() {
             {DAYS[now.getDay()]} {now.getDate()} {MONTHS[now.getMonth()]}
           </T>
           <T v="caption" muted>
-            {left > 0 ? `${fmtDuration(left)} until ${state.settings.dayEnd}` : 'Day done. Rest.'}
+            {dayEndLine(left, state.settings.dayEnd)}
           </T>
         </View>
       </View>

@@ -1,7 +1,7 @@
 // Turns a voice or typed dump into suggested tasks. The device clock is sent
 // with every call, because the model has no clock of its own. Calls go through
 // the focus-claude Supabase function, which holds the Anthropic key.
-import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js';
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js';
 import { configured, supabase } from './supabase';
 import { normalise, type ParseResult } from './normalise';
 import { ASK_RULE, CHECK_TOOL, type CheckIn, checkInMessage, checkInPrompt, cleanCheckIn, type JobRef, type Leftover, NO_MORE_QUESTIONS, TICK_RULE } from './leftovers';
@@ -105,15 +105,16 @@ export function onClaudeUsage(fn: typeof usageListener) {
 async function callClaude(body: object, settings: Settings, call = 'dump'): Promise<any> {
   if (!configured) throw new ClaudeError('Focus is not connected to Supabase yet. Add your project details in src/config.ts and rebuild.');
   const { data: session } = await supabase.auth.getSession();
-  if (!session.session) throw new ClaudeError('Sign in once in Settings so Focus can reach Claude.');
-  let { data, error } = await supabase.functions.invoke('focus-claude', { body });
+  if (!session.session) throw new ClaudeError('Not signed in. Sign in with your email in Settings (the gear on Today), then try again.');
+  let { data, error } = await supabase.functions.invoke('focus-claude', { body, timeout: 60000 });
   // A stale sign-in token: refresh it quietly and try once more before saying anything.
   if (error instanceof FunctionsHttpError && error.context?.status === 401) {
     const { error: refreshError } = await supabase.auth.refreshSession();
-    if (!refreshError) ({ data, error } = await supabase.functions.invoke('focus-claude', { body }));
+    if (!refreshError) ({ data, error } = await supabase.functions.invoke('focus-claude', { body, timeout: 60000 }));
   }
   if (error) {
-    if (error instanceof FunctionsFetchError) throw new ClaudeError("Couldn't reach Focus's server. Check you're online and try again.");
+    if (error instanceof FunctionsFetchError) throw new ClaudeError("Couldn't reach Focus's server. Check you're online and try again. Your words are still here.");
+    if (error instanceof FunctionsRelayError) throw new ClaudeError(`Supabase couldn't run the focus-claude function (${error.message}). Try again in a minute.`);
     if (error instanceof FunctionsHttpError) {
       const status = error.context?.status;
       const detail: any = await error.context?.json?.().catch(() => null);
@@ -129,13 +130,18 @@ async function callClaude(body: object, settings: Settings, call = 'dump'): Prom
       if (status === 404 && detail?.error?.type === 'not_found_error')
         throw new ClaudeError(`Claude doesn't know the model "${settings.model}". Check the model name at the bottom of Settings.`);
       if (status === 404) throw new ClaudeError("Focus's server isn't set up yet. In Supabase, Edge Functions needs one called focus-claude.");
-      throw new ClaudeError(`Claude said: ${detail?.error?.message ?? detail?.error ?? `error ${status}`}`);
+      throw new ClaudeError(`Focus's server said no (error ${status}): ${detail?.error?.message ?? (typeof detail?.error === 'string' ? detail.error : detail?.message) ?? 'no detail'}`);
     }
-    throw new ClaudeError('Something went wrong reaching Claude. Try again.');
+    throw new ClaudeError(`Something went wrong reaching Claude (${String((error as any)?.message ?? error)}). Try again.`);
   }
-  const u = (data as any)?.usage;
-  if (u && usageListener)
-    usageListener({ call, model: String((data as any)?.model ?? settings.model), inputTokens: Number(u.input_tokens ?? 0) + Number(u.cache_read_input_tokens ?? 0) + Number(u.cache_creation_input_tokens ?? 0), outputTokens: Number(u.output_tokens ?? 0) });
+  const u = (data as any)?.usage ?? {}; // no usage numbers still counts as a call
+  // Logging the call for the dev report must never break a send.
+  try {
+    if (usageListener)
+      usageListener({ call, model: String((data as any)?.model ?? settings.model), inputTokens: Number(u.input_tokens ?? 0) + Number(u.cache_read_input_tokens ?? 0) + Number(u.cache_creation_input_tokens ?? 0), outputTokens: Number(u.output_tokens ?? 0) });
+  } catch {
+    /* the log is a bonus */
+  }
   return data;
 }
 

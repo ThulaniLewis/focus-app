@@ -180,4 +180,4 @@ Later: run the onboarding interview with Elijah or Dad via a Claude chat (no cod
 
 ## Parking lot (new ideas go here first)
 
--
+- Let the mic answer simple questions ("what's the weather", "what's next"). Noted 21 Nov 2026 after Stage 1 testing. Not built yet.

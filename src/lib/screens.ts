@@ -12,6 +12,7 @@ const TITLES: [RegExp, string][] = [
   [/^\/settings$/, 'Settings'],
   [/^\/tablet-settings$/, 'Tablet settings panel'],
   [/^\/dump/, 'Talk it through'],
+  [/^\/note/, 'Note for Claude'],
   [/^\/week$/, 'Week ahead'],
   [/^\/winddown$/, 'Wind down'],
   [/^\/room\//, 'Room view'],
@@ -40,7 +41,7 @@ export function recordScreen(path: string) {
 
 /** The screen before the one she's on now (the dev report opens from somewhere). */
 export function previousScreen(): string {
-  const before = recent.filter((p) => !/^\/(devreport|dump)/.test(p));
+  const before = recent.filter((p) => !/^\/(devreport|dump|note)/.test(p));
   return screenTitle(before[before.length - 1] ?? '/');
 }
 

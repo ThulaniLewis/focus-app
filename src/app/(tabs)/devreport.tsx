@@ -43,7 +43,7 @@ export default function DevReport() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Note for Claude"
-        onPress={() => router.navigate(`/dump?mode=note&from=${encodeURIComponent(previousScreen())}`)}
+        onPress={() => router.navigate(`/note?from=${encodeURIComponent(previousScreen())}`)}
         style={({ pressed }) => ({ minHeight: 56, borderRadius: radius.sm, backgroundColor: c.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space[3], opacity: pressed ? 0.8 : 1 })}
       >
         <Icon name="mic" size={20} color={c.onPrimary} />

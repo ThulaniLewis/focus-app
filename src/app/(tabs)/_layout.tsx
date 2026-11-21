@@ -70,6 +70,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="room/[slug]" options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="easier" options={hidden} />
       <Tabs.Screen name="devreport" options={hidden} />
+      <Tabs.Screen name="note" options={hidden} />
       <Tabs.Screen name="tablet-settings" options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="comeup"options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="kitchen"options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />

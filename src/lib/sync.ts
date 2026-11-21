@@ -89,11 +89,19 @@ export function localRows(state: State): Map<string, Row> {
   return rows;
 }
 
+/**
+ * A shared setting this device has never had a value for, and never synced. It has nothing to send,
+ * and it must not count as "changed here": otherwise a device that updated before a setting existed
+ * (say the tablet, before weatherPlace) would push an empty value over the other device's real one.
+ */
+const neverSet = (row: Row | undefined, shadow: Shadow) =>
+  !!row && row.kind === 'settings' && shadow[row.id] === undefined && Object.values(row.data ?? {}).every((v) => v === undefined);
+
 /** Rows that changed since the last sync, plus deletions for shared things that have gone. */
 export function toPush(state: State, shadow: Shadow): Row[] {
   const rows = localRows(state);
   const out: Row[] = [];
-  for (const [id, r] of rows) if (shadow[id] !== fingerprint(r.data)) out.push(r);
+  for (const [id, r] of rows) if (shadow[id] !== fingerprint(r.data) && !neverSet(r, shadow)) out.push(r);
   // Only tasks are ever deleted. (The old single settings row is left alone for older builds.)
   for (const id of Object.keys(shadow))
     if (id.startsWith('t:') && !rows.has(id) && shadow[id] !== DELETED) out.push({ id, kind: 'task', data: null, deleted: true });
@@ -129,7 +137,7 @@ export function applyRemote(
   if (!rows.length) return { state, shadow };
   const nextShadow: Shadow = { ...shadow };
   const local = localRows(state);
-  const dirty = (id: string) => !opts.firstSync && local.has(id) && shadow[id] !== fingerprint(local.get(id)!.data);
+  const dirty = (id: string) => !opts.firstSync && local.has(id) && shadow[id] !== fingerprint(local.get(id)!.data) && !neverSet(local.get(id), shadow);
 
   let tasks = state.tasks;
   let settings = state.settings;

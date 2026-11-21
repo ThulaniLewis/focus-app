@@ -27,6 +27,11 @@ export function parseLocal(s: string): Date | null {
 
 export const fmtTime = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
+/** The line under the date: what 22:30 is, and how long is left until it. */
+export function dayEndLine(minutesLeft: number, dayEnd: string, durationOf: (min: number) => string = fmtDuration): string {
+  return minutesLeft > 0 ? `Day ends ${dayEnd} · ${durationOf(minutesLeft)} left` : 'Day done. Rest.';
+}
+
 export function fmtDuration(totalMin: number): string {
   const m = Math.max(0, Math.round(totalMin));
   if (m < 60) return `${m} min`;

@@ -2,6 +2,7 @@
 // switch off. Kept on this device only, never synced. Private items show as "private item" unless
 // she chooses to include them.
 import { isPrivateTask } from './sync';
+import { roomNameOf } from './time';
 import type { Space, State, Task } from './types';
 
 export type LoggedTask = { id: string; title: string; spaceId?: string };
@@ -34,6 +35,17 @@ export function costOf(model: string, inputTokens: number, outputTokens: number)
 export function appendLog(log: DevEvent[] | undefined, ev: DevEvent): DevEvent[] {
   const next = [...(log ?? []), ev];
   return next.length > MAX_EVENTS ? next.slice(next.length - MAX_EVENTS) : next;
+}
+
+/** The same change twice in a row, a moment apart, is one tap that fired twice: log it once. */
+export const REPEAT_WINDOW_MS = 1500;
+export function appendChange(log: DevEvent[] | undefined, ev: Extract<DevEvent, { kind: 'change' }>): DevEvent[] {
+  const last = log?.[log.length - 1];
+  if (last && last.kind === 'change' && last.label === ev.label && Math.abs(new Date(ev.at).getTime() - new Date(last.at).getTime()) <= REPEAT_WINDOW_MS) {
+    const ids = (e: typeof ev) => (e.tasks ?? []).map((t) => t.id).sort().join();
+    if (ids(last) === ids(ev)) return log!;
+  }
+  return appendLog(log, ev);
 }
 
 export const logged = (t: Task): LoggedTask => ({ id: t.id, title: t.title, spaceId: t.spaceId });
@@ -72,6 +84,24 @@ export function weekSummary(log: DevEvent[] | undefined, now: Date) {
 }
 
 const PRIVATE = 'private item';
+
+type Choice = NonNullable<State['settings']['momentumLog']>[number]['choice'];
+/** Plain words for what she chose, not the ids the app stores. */
+export const CHOICE: Record<Choice, string> = {
+  five: 'Asked for 5 more minutes',
+  tiny: 'Asked for one tiny thing',
+  break: 'Took a break, then back',
+  stop: 'Stopped for now',
+  avoid: 'Avoiding this room',
+  skip: 'Skipped this room',
+};
+const LOST: Choice[] = ['five', 'tiny', 'break'];
+const AVOID_REASON: Record<string, string> = {
+  'too-much': "there's too much",
+  'no-homes': "doesn't know where things go",
+  perfect: 'it has to look perfect',
+  'dont-want': "something in there she doesn't want to deal with",
+};
 
 function show(t: LoggedTask, spaces: Space[], includePrivate: boolean) {
   return !includePrivate && isPrivateTask(t as Task, spaces) ? PRIVATE : t.title;
@@ -118,15 +148,32 @@ export function buildReport(state: State, opts: { includePrivate: boolean; now: 
     if (d.question) lines.push(`  - Asked: ${d.question}`);
   }
 
-  lines.push('', '## Lost momentum and avoiding');
+  const rooms = state.settings.rooms;
   const momentum = state.settings.momentumLog ?? [];
-  if (!momentum.length) lines.push('Nothing logged.');
-  for (const m of momentum) lines.push(`- ${stamp(m.at)}: ${m.choice}${m.reason ? ` (${m.reason})` : ''}${m.room ? `, ${m.room}` : ''}${m.job ? `, ${m.job}` : ''}`);
+  const entry = (m: (typeof momentum)[number]) => {
+    const room = roomNameOf(rooms, m.room) ?? m.room;
+    const reason = m.reason ? AVOID_REASON[m.reason] ?? m.reason : '';
+    return `- ${stamp(m.at)}: ${CHOICE[m.choice] ?? m.choice}${reason ? ` (${reason})` : ''}${room ? `, ${room}` : ''}${m.job ? `, ${m.job}` : ''}`;
+  };
+  lines.push('', '## Lost momentum');
+  const lost = momentum.filter((m) => LOST.includes(m.choice));
+  if (!lost.length) lines.push('Nothing logged.');
+  for (const m of lost) lines.push(entry(m));
+
+  lines.push('', '## Stopped for now');
+  const stopped = momentum.filter((m) => m.choice === 'stop');
+  if (!stopped.length) lines.push('Nothing logged.');
+  for (const m of stopped) lines.push(entry(m));
+
+  lines.push('', '## Avoiding and skipping');
+  const avoided = momentum.filter((m) => m.choice === 'avoid' || m.choice === 'skip');
+  if (!avoided.length) lines.push('Nothing logged.');
+  for (const m of avoided) lines.push(entry(m));
 
   lines.push('', '## Room rounds');
   const rounds = state.settings.roundLog ?? [];
   if (!rounds.length) lines.push('None yet.');
-  for (const r of rounds) lines.push(`- ${r.day}: ${r.room}, ${r.min} min, ${r.done} done`);
+  for (const r of rounds) lines.push(`- ${r.day}: ${roomNameOf(rooms, r.room) ?? r.room}, ${r.min} min, ${r.done} done`);
 
   lines.push('', '## Activity');
   const changes = log.filter((e) => e.kind === 'change');

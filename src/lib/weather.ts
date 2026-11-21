@@ -1,6 +1,6 @@
 // Weather on the Dash, from Open-Meteo (free, no key, no account). Only the town she typed in
 // Settings is ever sent, as a rough position (rounded to about 10 km). Never the phone's location.
-import { fmtTime } from './time';
+import { fmtTime, parseLocal } from './time';
 
 export type WeatherPlace = { name: string; lat: number; lon: number };
 
@@ -58,7 +58,9 @@ export function parseForecast(json: any, now: Date): Weather | null {
   let rainFrom: Date | null = null;
   const until = now.getTime() + LOOK_AHEAD_H * 3600000;
   for (let i = 0; i < times.length; i++) {
-    const at = new Date(times[i]);
+    // Open-Meteo's times are local with no zone ("2026-11-21T15:00"): read them as local, never UTC.
+    const at = parseLocal(String(times[i]));
+    if (!at) continue;
     // The hour that's under way counts, so rain "now" shows.
     if (at.getTime() + 3600000 <= now.getTime() || at.getTime() > until) continue;
     if ((chance[i] ?? 0) >= RAIN_CHANCE || (mm[i] ?? 0) >= RAIN_MM) {
@@ -74,4 +76,29 @@ export function parseForecast(json: any, now: Date): Weather | null {
 export function weatherAdvice(w: Weather, leaveAt: Date | null | undefined): string {
   if (w.rainFrom && leaveAt && w.rainFrom.getTime() <= leaveAt.getTime() + 30 * 60000) return `Take a coat when you leave at ${fmtTime(leaveAt)}`;
   return `High ${w.high}°, low ${w.low}°`;
+}
+
+/** Look a town up. Only the typed town name is sent. */
+export async function findTown(typed: string, fetchFn: typeof fetch = fetch): Promise<{ place: WeatherPlace } | { error: string }> {
+  try {
+    const r = await fetchFn(geocodeUrl(typed));
+    if (!r.ok) return { error: `The weather service said no (error ${r.status}). Try again in a minute.` };
+    const place = parsePlace(await r.json(), typed);
+    return place ? { place } : { error: `Couldn't find "${typed.trim()}". Try the nearest big town.` };
+  } catch {
+    return { error: "Couldn't reach the weather service. Check you're online." };
+  }
+}
+
+/** What the weather card shows: the forecast, or a plain reason there isn't one. */
+export type WeatherView =
+  | { kind: 'ok'; weather: Weather }
+  | { kind: 'no-town' }
+  | { kind: 'loading' }
+  | { kind: 'error'; message: string };
+
+export function weatherNote(v: Exclude<WeatherView, { kind: 'ok' }>): { title: string; detail: string } {
+  if (v.kind === 'no-town') return { title: 'Set your town in Settings', detail: 'Weather needs a town. Only the town name is sent.' };
+  if (v.kind === 'loading') return { title: 'Checking the weather…', detail: '' };
+  return { title: 'Weather unavailable', detail: v.message };
 }

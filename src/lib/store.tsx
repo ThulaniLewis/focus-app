@@ -16,7 +16,8 @@ import { addToCalendar } from './calendar';
 import { migrate } from './migrate';
 import { applySetup } from './seed';
 import { markWith } from './marks';
-import { appendLog, type DevEvent, touched } from './devlog';
+import { loadDeviceRole } from './deviceRole';
+import { appendChange, appendLog, type DevEvent, touched } from './devlog';
 import { onClaudeUsage, type ParsedItem } from './claude';
 import * as Notifications from 'expo-notifications';
 import { type DayPlan, DEFAULT_SETTINGS, DEFAULT_SPACES, type Room, type Settings, type Space, type State, type Task } from './types';
@@ -36,6 +37,10 @@ type Ctx = {
   linkError: string | null;
   sendCode: (email: string) => Promise<string | null>;
   verifyCode: (email: string, code: string) => Promise<string | null>;
+  /** Email and password, for an account that already exists (never creates one). */
+  signInWithPassword: (email: string, password: string) => Promise<string | null>;
+  /** While signed in: set (or change) the password, so this account can sign in with it on another device. */
+  setPassword: (password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   canUndo: string | null;
   undoRev: number;
@@ -94,6 +99,15 @@ type Ctx = {
   removeNote: (noteId: string) => void;
 };
 
+/** Supabase's wording, in plain English. */
+export function passwordMessage(m: string): string {
+  if (/invalid login credentials/i.test(m)) return "That email and password don't match. If you haven't set a password yet, sign in with an email code on your phone, then set one in Settings.";
+  if (/reauthentication|recent/i.test(m)) return 'For safety, sign in again with an email code first, then set the password straight away.';
+  if (/same.*password|different from the old/i.test(m)) return 'That is already your password. Pick a different one.';
+  if (/weak|at least|short/i.test(m)) return 'That password is too short or too easy to guess. Try a longer one.';
+  return m;
+}
+
 const ACTION_KEY = 'focus.lastNotificationAction';
 
 const StoreContext = createContext<(Ctx & { sync: SyncStatus }) | null>(null);
@@ -115,6 +129,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let loadedOk = false;
     (async () => {
       try {
+        await loadDeviceRole(); // phone or kitchen tablet: its own key, never touched by sign-in or sync
         const raw = await AsyncStorage.getItem(KEY);
         let loaded: State = empty;
         if (raw) {
@@ -172,7 +187,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!configured) return;
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user.email ?? null));
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only an explicit sign out (or a session that really is gone) signs you out here; a refresh that
+      // couldn't reach the network must never look like one.
+      if (session) setUser(session.user.email ?? null);
+      else if (event === 'SIGNED_OUT') setUser(null);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 
@@ -186,15 +206,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const latest = useRef(state);
   latest.current = state;
   /** While a batch runs, its changes share one undo step: the state from before the first one. */
-  const batching = useRef<{ label: string; pushed: boolean } | null>(null);
+  const batching = useRef<{ label: string; pushed: boolean; firstTasks?: Task[] } | null>(null);
   const change = useCallback((label: string, fn: (s: State) => State) => {
     const prev = latest.current;
     const changed = fn(prev);
     if (changed === prev) return;
     // The dev report's activity log rides along, but undo never takes entries away (see undo).
-    const next = { ...changed, devLog: appendLog(changed.devLog, { at: nowISO(), kind: 'change', label, tasks: touched(prev.tasks, changed.tasks) }) };
-    latest.current = next;
+    // Inside a batch, one log entry is written when the batch ends (see batch), not one per step.
     const b = batching.current;
+    if (b && !b.firstTasks) b.firstTasks = prev.tasks;
+    const next = b ? changed : { ...changed, devLog: appendChange(changed.devLog, { at: nowISO(), kind: 'change', label, tasks: touched(prev.tasks, changed.tasks) }) };
+    latest.current = next;
     if (!b || !b.pushed) {
       history.current = [...history.current.slice(-9), { state: prev, label: b ? b.label : label }];
       if (b) b.pushed = true;
@@ -240,7 +262,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    onClaudeUsage((u) => logEvent({ at: nowISO(), kind: 'claude', ...u }));
+    onClaudeUsage((u) => {
+      try {
+        logEvent({ at: nowISO(), kind: 'claude', ...u });
+      } catch {
+        /* never let the dev log break a send */
+      }
+    });
     return () => onClaudeUsage(null);
   }, [logEvent]);
 
@@ -262,6 +290,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       async verifyCode(email, code) {
         const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'email' });
         return error ? error.message : null;
+      },
+      async signInWithPassword(email, password) {
+        if (!configured) return 'Add your Supabase details in src/config.ts first.';
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+        return error ? passwordMessage(error.message) : null;
+      },
+      async setPassword(password) {
+        if (password.length < 8) return 'Use at least 8 characters.';
+        const { error } = await supabase.auth.updateUser({ password });
+        return error ? passwordMessage(error.message) : null;
       },
       async signOut() {
         await supabase.auth.signOut();
@@ -535,11 +573,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       batch(label, fn) {
         // Nested batches join the outer one.
         if (batching.current) return fn();
-        batching.current = { label, pushed: false };
+        const b: { label: string; pushed: boolean; firstTasks?: Task[] } = { label, pushed: false };
+        batching.current = b;
         try {
           fn();
         } finally {
           batching.current = null;
+          // One tap, one log entry: the batch's label and everything it touched.
+          if (b.firstTasks) {
+            const cur = latest.current;
+            const logged = { ...cur, devLog: appendChange(cur.devLog, { at: nowISO(), kind: 'change', label, tasks: touched(b.firstTasks, cur.tasks) }) };
+            latest.current = logged;
+            setState(logged);
+          }
         }
       },
       markJobs(day, done, started) {
