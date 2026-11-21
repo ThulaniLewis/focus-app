@@ -10,4 +10,8 @@ Things that live in the native app, so an over-the-air update can't change them.
 - [ ] **App background.** `app.json` `backgroundColor` `#F6F4EF` should become `bg` light `#FBF3F4`.
 - [ ] **Notification colour.** `app.json` `expo-notifications` `color` is `#35676A`. Use `primary` light `#9C4F67`.
 
+## From Stage 1: decided to wait for the Stage 5 build
+
+- [ ] **"Exit to Samsung home"** on the tablet Settings panel. Add `expo-intent-launcher` (`npx expo install expo-intent-launcher`) and launch the HOME intent with Samsung's launcher. See `docs/design/DECISIONS.md`.
+
 When this goes in: changing native config means a new runtime. Bump `version` (and so `runtimeVersion`, policy appVersion) past 0.7.0, and say so before building.
