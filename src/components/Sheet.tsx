@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { font, radius, space, useColors } from '../lib/theme';
+import { font, radius, scrim, space, useColors } from '../theme';
 import { D } from './dashPalette';
 import { Icon } from './Icon';
 import { T } from './ui';
@@ -35,7 +35,7 @@ export function SheetHost() {
   const muted = dash ? D.muted : c.inkMuted;
   return (
     <Modal visible={!!spec} transparent animationType="slide" onRequestClose={close} statusBarTranslucent>
-      <Pressable style={{ flex: 1, backgroundColor: dash ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)' }} onPress={close} accessibilityLabel="Close" />
+      <Pressable style={{ flex: 1, backgroundColor: dash ? scrim.dash : scrim.phone }} onPress={close} accessibilityLabel="Close" />
       {spec && (
         <View
           style={{
@@ -81,7 +81,7 @@ export function SheetHost() {
                   opacity: pressed ? 0.6 : 1,
                 })}
               >
-                {o.icon ? <Icon name={o.icon} size={dash ? 28 : 20} color={o.destructive ? c.caution : dash ? D.teal : c.inkMuted} /> : null}
+                {o.icon ? <Icon name={o.icon} size={dash ? 28 : 20} color={o.destructive ? c.caution : dash ? D.primary : c.inkMuted} /> : null}
                 {dash ? (
                   <Text style={{ color: o.destructive ? c.caution : ink, fontFamily: font.bodyStrong, fontSize: 24 }}>{o.label}</Text>
                 ) : (
@@ -91,7 +91,7 @@ export function SheetHost() {
             ))}
           </ScrollView>
           <Pressable onPress={close} style={{ minHeight: dash ? 64 : 48, alignItems: 'center', justifyContent: 'center' }}>
-            {dash ? <Text style={{ color: D.teal, fontFamily: font.bodyStrong, fontSize: 20 }}>Cancel</Text> : <T v="label" color={c.primary}>Cancel</T>}
+            {dash ? <Text style={{ color: D.primary, fontFamily: font.bodyStrong, fontSize: 20 }}>Cancel</Text> : <T v="label" color={c.primary}>Cancel</T>}
           </Pressable>
         </View>
       )}

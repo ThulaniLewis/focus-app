@@ -1,6 +1,7 @@
 import { Lexend_600SemiBold } from '@expo-google-fonts/lexend';
 import {
   AtkinsonHyperlegibleNext_400Regular,
+  AtkinsonHyperlegibleNext_500Medium,
   AtkinsonHyperlegibleNext_600SemiBold,
 } from '@expo-google-fonts/atkinson-hyperlegible-next';
 import { useFonts } from 'expo-font';
@@ -17,6 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { SessionHost } from '../components/Session';
 import { PunctualityHost } from '../components/Punctuality';
+import { featureOn } from '../lib/features';
 import { SheetHost } from '../components/Sheet';
 import * as SystemUI from 'expo-system-ui';
 import React, { useEffect } from 'react';
@@ -29,12 +31,12 @@ import { setupNotifications } from '../lib/notify';
 installCrashLog();
 import { StoreProvider, useStore } from '../lib/store';
 import { TimersProvider } from '../lib/timers';
-import { useColors } from '../lib/theme';
+import { colors, radius, space, type, useColors } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function Gate() {
-  const { ready } = useStore();
+  const { ready, state } = useStore();
   const c = useColors();
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
@@ -52,7 +54,7 @@ function Gate() {
       </Stack>
       <SheetHost />
       <SessionHost />
-      <PunctualityHost />
+      {featureOn(state.settings, 'punctuality') && <PunctualityHost />}
       <RoomLinks />
       <NotificationLinks />
     </>
@@ -83,6 +85,7 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     Lexend_600SemiBold,
     AtkinsonHyperlegibleNext_400Regular,
+    AtkinsonHyperlegibleNext_500Medium,
     AtkinsonHyperlegibleNext_600SemiBold,
   });
   useEffect(() => {
@@ -102,20 +105,22 @@ export default function RootLayout() {
 
 /** If a screen crashes, show what went wrong instead of closing the app. */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  // Dark, like before. System font on purpose: this has to show even if the fonts failed.
+  const k = colors.dark;
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#161A1C' }} contentContainerStyle={{ padding: 24, paddingTop: 72, gap: 16 }}>
-      <Text style={{ color: '#E8E6E1', fontSize: 24, fontWeight: '600' }}>Something in Focus tripped up</Text>
-      <Text style={{ color: '#A3ADB1', fontSize: 16 }}>Screenshot this and send it to Claude. Your tasks are safe.</Text>
-      <Text selectable style={{ color: '#F0D9A8', fontSize: 14, backgroundColor: '#3A2F1C', padding: 12, borderRadius: 12 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: k.bg }} contentContainerStyle={{ padding: space[6], paddingTop: space[8] * 2, gap: space[4] }}>
+      <Text style={{ color: k.ink, fontSize: type.title.fontSize, lineHeight: type.title.lineHeight, fontWeight: '600' }}>Something in Focus tripped up</Text>
+      <Text style={{ color: k.inkMuted, fontSize: type.body.fontSize, lineHeight: type.body.lineHeight }}>Screenshot this and send it to Claude. Your tasks are safe.</Text>
+      <Text selectable style={{ color: k.nudgeInk, fontSize: type.label.fontSize, lineHeight: type.label.lineHeight, backgroundColor: k.nudgeSoft, padding: space[3], borderRadius: radius.sm }}>
         {String(error?.message ?? error)}
         {'\n\n'}
         {String(error?.stack ?? '').split('\n').slice(0, 8).join('\n')}
       </Text>
-      <Pressable onPress={retry} style={{ backgroundColor: '#8FC1BE', borderRadius: 12, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#10201F', fontSize: 16, fontWeight: '600' }}>Try again</Text>
+      <Pressable onPress={retry} style={{ backgroundColor: k.primary, borderRadius: radius.sm, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: k.onPrimary, fontSize: type.bodyStrong.fontSize, fontWeight: '600' }}>Try again</Text>
       </Pressable>
     </ScrollView>
   );

@@ -11,18 +11,17 @@ import { Icon } from './Icon';
 import { openRoundStop, openStopFlow } from './Session';
 import { showSheet } from './Sheet';
 import { BigButton, D, L } from './TabletDash';
+import { withAlpha } from '../theme';
 
-const AMBER = '#3A2F1C';
-const AMBER_INK = '#F0D9A8';
 const LABEL = { letterSpacing: 1 };
 
 function Card({ children, bg = D.tile, border = D.line, radius = 24, style }: { children: React.ReactNode; bg?: string; border?: string; radius?: number; style?: object }) {
   return <View style={[{ backgroundColor: bg, borderWidth: border === 'none' ? 0 : 1, borderColor: border, borderRadius: radius, padding: 24, gap: 12 }, style]}>{children}</View>;
 }
 
-function Chip({ label, tone }: { label: string; tone: 'amber' | 'plain' | 'teal' }) {
-  const bg = tone === 'amber' ? AMBER : tone === 'teal' ? D.tealSoft : 'transparent';
-  const ink = tone === 'amber' ? AMBER_INK : tone === 'teal' ? D.tealSoftInk : D.muted;
+function Chip({ label, tone }: { label: string; tone: 'nudge' | 'plain' | 'primary' }) {
+  const bg = tone === 'nudge' ? D.nudgeSoft : tone === 'primary' ? D.primarySoft : 'transparent';
+  const ink = tone === 'nudge' ? D.nudgeInk : tone === 'primary' ? D.primaryStrong : D.muted;
   return (
     <View style={{ backgroundColor: bg, borderWidth: tone === 'plain' ? 1 : 0, borderColor: D.ghost, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 12 }}>
       <L size={16} weight="strong" color={ink}>{label}</L>
@@ -31,7 +30,7 @@ function Chip({ label, tone }: { label: string; tone: 'amber' | 'plain' | 'teal'
 }
 
 /** A big solid button in the amber card. */
-function AmberButton({ label, onPress, ghost }: { label: string; onPress: () => void; ghost?: boolean }) {
+function NudgeButton({ label, onPress, ghost }: { label: string; onPress: () => void; ghost?: boolean }) {
   return (
     <Pressable
       onPress={onPress}
@@ -43,12 +42,12 @@ function AmberButton({ label, onPress, ghost }: { label: string; onPress: () => 
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: ghost ? 'transparent' : AMBER_INK,
+        backgroundColor: ghost ? 'transparent' : D.nudgeInk,
         borderWidth: ghost ? 1 : 0,
-        borderColor: AMBER_INK,
+        borderColor: D.nudgeInk,
       }}
     >
-      <L size={24} weight="strong" color={ghost ? AMBER_INK : AMBER}>{label}</L>
+      <L size={24} weight="strong" color={ghost ? D.nudgeInk : D.nudgeSoft}>{label}</L>
     </Pressable>
   );
 }
@@ -81,7 +80,7 @@ function Ring({ size, progress, children }: { size: number; progress: number; ch
             width: 6,
             height: 20,
             borderRadius: 3,
-            backgroundColor: i < on ? AMBER_INK : 'rgba(240,217,168,0.18)',
+            backgroundColor: i < on ? D.nudgeInk : withAlpha(D.nudgeInk, 0.18),
             transform: [{ rotate: `${(i * 360) / n}deg` }, { translateY: -r }],
           }}
         />
@@ -107,22 +106,22 @@ function JobRow({ job, onToggle, first }: { job: RoomJob; onToggle: () => void; 
           height: 36,
           borderRadius: 10,
           borderWidth: 2,
-          borderColor: job.done ? D.teal : D.ghost,
-          backgroundColor: job.done ? D.teal : 'transparent',
+          borderColor: job.done ? D.primary : D.ghost,
+          backgroundColor: job.done ? D.primary : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {job.done ? <Icon name="check" size={24} color={D.tealInk} /> : null}
+        {job.done ? <Icon name="check" size={24} color={D.onPrimary} /> : null}
       </View>
       <View style={{ flex: 1, gap: 4 }}>
         <L size={28} color={job.done ? D.muted : D.ink} style={struck ? { textDecorationLine: 'line-through' } : undefined}>
           {job.task.title}
         </L>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          {job.done && job.doneAt ? <L size={19} weight="strong" color={D.teal}>{`Done ${job.doneAt}`}</L> : job.done ? <L size={19} weight="strong" color={D.teal}>Done</L> : null}
+          {job.done && job.doneAt ? <L size={19} weight="strong" color={D.primary}>{`Done ${job.doneAt}`}</L> : job.done ? <L size={19} weight="strong" color={D.primary}>Done</L> : null}
           {!job.done && job.sub ? <L size={19} color={D.muted}>{job.sub}</L> : null}
-          {job.started ? <Chip tone="amber" label="Started, some left" /> : null}
+          {job.started ? <Chip tone="nudge" label="Started, some left" /> : null}
           {job.niceToHave && !job.done ? <Chip tone="plain" label="Nice to have" /> : null}
         </View>
       </View>
@@ -179,31 +178,31 @@ export function TabletRoom({ room, fromTag }: { room: string; fromTag: boolean }
     return (
       <View style={{ flex: 1, flexDirection: 'row', gap: 28, paddingVertical: 32, paddingHorizontal: 36 }}>
         <View style={{ width: 430 }}>
-          <Card bg={AMBER} border="none" radius={28} style={{ flex: 1, gap: 18 }}>
+          <Card bg={D.nudgeSoft} border="none" radius={28} style={{ flex: 1, gap: 18 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-              <L size={18} weight="strong" color={AMBER_INK} style={LABEL}>{round ? `${label.toUpperCase()} ROUND` : label.toUpperCase()}</L>
-              <View style={{ borderWidth: 1, borderColor: AMBER_INK, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 12 }}>
-                <L size={15} weight="strong" color={AMBER_INK}>{fromTag ? `${label} tag` : 'Started here'}</L>
+              <L size={18} weight="strong" color={D.nudgeInk} style={LABEL}>{round ? `${label.toUpperCase()} ROUND` : label.toUpperCase()}</L>
+              <View style={{ borderWidth: 1, borderColor: D.nudgeInk, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 12 }}>
+                <L size={15} weight="strong" color={D.nudgeInk}>{fromTag ? `${label} tag` : 'Started here'}</L>
               </View>
             </View>
-            {!round ? <L size={24} display color={AMBER_INK} lines={2}>{timedJob!.title}</L> : null}
+            {!round ? <L size={24} display color={D.nudgeInk} lines={2}>{timedJob!.title}</L> : null}
             <Ring size={300} progress={est ? sec / (est * 60) : 0}>
-              <L size={84} display color={AMBER_INK} style={{ lineHeight: 90 }}>{fmtElapsed(sec)}</L>
-              {est ? <L size={20} color={AMBER_INK}>{`of about ${est} min`}</L> : null}
+              <L size={84} display color={D.nudgeInk} style={{ lineHeight: 90 }}>{fmtElapsed(sec)}</L>
+              {est ? <L size={20} color={D.nudgeInk}>{`of about ${est} min`}</L> : null}
             </Ring>
-            <L size={20} color={AMBER_INK}>
+            <L size={20} color={D.nudgeInk}>
               {!running
                 ? "Paused. Carry on when you're ready."
                 : `Started ${fmtTime(startedClock)}.${checkIn ? ` I'll check in at ${checkIn}: still on the ${label.toLowerCase()}?` : ''}`}
             </L>
             <View style={{ flex: 1 }} />
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <AmberButton
+              <NudgeButton
                 ghost
                 label={running ? 'Pause' : 'Carry on'}
                 onPress={() => (running ? (round ? pauseRound() : pauseTimer(timedJob!.id)) : round ? startRound(room) : startTimer(timedJob!.id))}
               />
-              <AmberButton label="Stop and tell me" onPress={() => (round ? openRoundStop(day) : openStopFlow(timedJob!.id, day))} />
+              <NudgeButton label="Stop and tell me" onPress={() => (round ? openRoundStop(day) : openStopFlow(timedJob!.id, day))} />
             </View>
           </Card>
         </View>
@@ -217,10 +216,10 @@ export function TabletRoom({ room, fromTag }: { room: string; fromTag: boolean }
             </View>
           </View>
           {onIt ? (
-            <Card bg={D.tealSoft} border="none">
-              <L size={16} weight="strong" color={D.tealSoftInk} style={LABEL}>ON IT NOW</L>
-              <L size={32} display color={D.tealSoftInk}>{onIt.task.title}</L>
-              {step ? <L size={20} color={D.tealSoftInk}>{`First step: ${step}`}</L> : null}
+            <Card bg={D.primarySoft} border="none">
+              <L size={16} weight="strong" color={D.primaryStrong} style={LABEL}>ON IT NOW</L>
+              <L size={32} display color={D.primaryStrong}>{onIt.task.title}</L>
+              {step ? <L size={20} color={D.primaryStrong}>{`First step: ${step}`}</L> : null}
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}>
                 <BigButton label="Done" onPress={() => toggle(onIt)} />
                 <BigButton ghost label="Some left" onPress={() => markJobs(day, [], [onIt.task.id])} />
@@ -267,30 +266,30 @@ export function TabletRoom({ room, fromTag }: { room: string; fromTag: boolean }
       </ScrollView>
 
       <ScrollView style={{ width: 400, flexGrow: 0 }} contentContainerStyle={{ gap: 20, paddingBottom: 24 }}>
-        <Card bg={AMBER} border="none" radius={28}>
-          <L size={18} weight="strong" color={AMBER_INK} style={LABEL}>ROOM ROUND</L>
-          <L size={40} display color={AMBER_INK}>{open.length === 1 ? '1 job left' : `${open.length} jobs left`}</L>
+        <Card bg={D.nudgeSoft} border="none" radius={28}>
+          <L size={18} weight="strong" color={D.nudgeInk} style={LABEL}>ROOM ROUND</L>
+          <L size={40} display color={D.nudgeInk}>{open.length === 1 ? '1 job left' : `${open.length} jobs left`}</L>
           {hard ? (
-            <L size={20} color={AMBER_INK}>This room's been hard to start lately. That's fine. Want a smaller way in?</L>
+            <L size={20} color={D.nudgeInk}>This room's been hard to start lately. That's fine. Want a smaller way in?</L>
           ) : last ? (
-            <L size={20} color={AMBER_INK}>{last}</L>
+            <L size={20} color={D.nudgeInk}>{last}</L>
           ) : null}
           <View style={{ flexDirection: 'row', marginTop: 6 }}>
-            {hard ? <AmberButton label="A smaller way in" onPress={avoid} /> : <AmberButton label={startLabel(state.settings, room)} onPress={() => startRound(room)} />}
+            {hard ? <NudgeButton label="A smaller way in" onPress={avoid} /> : <NudgeButton label={startLabel(state.settings, room)} onPress={() => startRound(room)} />}
           </View>
           {hard ? (
             <Pressable onPress={() => startRound(room)} accessibilityRole="button" style={{ minHeight: 48, justifyContent: 'center' }}>
-              <L size={18} weight="strong" color={AMBER_INK}>{startLabel(state.settings, room)} anyway</L>
+              <L size={18} weight="strong" color={D.nudgeInk}>{startLabel(state.settings, room)} anyway</L>
             </Pressable>
           ) : null}
         </Card>
         {grab ? (
-          <Card bg={D.tealSoft} border="none">
-            <L size={16} weight="strong" color={D.tealSoftInk} style={LABEL}>{grab.title}</L>
+          <Card bg={D.primarySoft} border="none">
+            <L size={16} weight="strong" color={D.primaryStrong} style={LABEL}>{grab.title}</L>
             {grab.lines.map((g, i) => (
               <View key={i} style={{ gap: 2 }}>
-                <L size={24} weight="strong" color={D.tealSoftInk}>{g.item}</L>
-                <L size={17} color={D.tealSoftInk}>{`for ${g.forTitle}${g.toRoom ? ` (${g.toRoom})` : ''}`}</L>
+                <L size={24} weight="strong" color={D.primaryStrong}>{g.item}</L>
+                <L size={17} color={D.primaryStrong}>{`for ${g.forTitle}${g.toRoom ? ` (${g.toRoom})` : ''}`}</L>
               </View>
             ))}
           </Card>

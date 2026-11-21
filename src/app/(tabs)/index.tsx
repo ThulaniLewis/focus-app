@@ -5,6 +5,7 @@ import { AccountCard } from '../../components/Account';
 import { FocusCard } from '../../components/Focus';
 import { WaitingCard } from '../../components/Waiting';
 import { SleepCard } from '../../components/SleepCard';
+import { featureOn } from '../../lib/features';
 import { PunctualityCards } from '../../components/Punctuality';
 import { savHomeOn } from '../../lib/comeUp';
 import { Icon } from '../../components/Icon';
@@ -14,7 +15,7 @@ import { Button, Card, Chip, IconButton, Screen, Section, T } from '../../compon
 import { clearLastCrash, readLastCrash } from '../../lib/crash';
 import { calendarAllowed, checkDiary, type DiaryCheck, useDiary } from '../../lib/calendar';
 import { useNow, useStore } from '../../lib/store';
-import { radius, space, useColors } from '../../lib/theme';
+import { radius, space, useColors } from '../../theme';
 import { dayKey, fmtTime, slug, tasksFor, wakeFor, isDoneOn } from '../../lib/time';
 import { useDashMode } from '../../lib/device';
 import { TabletDash } from '../../components/TabletDash';
@@ -91,11 +92,11 @@ function TodayList() {
         </Card>
       )}
 
-      <SleepCard />
+      {featureOn(state.settings, 'sleep') && <SleepCard />}
 
       <WaitingCard />
 
-      <PunctualityCards />
+      {featureOn(state.settings, 'punctuality') && <PunctualityCards />}
 
       <FocusCard day={today} />
 

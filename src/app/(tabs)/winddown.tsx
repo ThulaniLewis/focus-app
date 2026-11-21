@@ -7,7 +7,7 @@ import { TaskRow } from '../../components/TaskRow';
 import { Card, Screen, Section, T } from '../../components/ui';
 import { useDiary } from '../../lib/calendar';
 import { useNow, useStore } from '../../lib/store';
-import { radius, space, useColors } from '../../lib/theme';
+import { radius, space, useColors } from '../../theme';
 import { agendaFor, dayKey, fmtTime, isDoneOn, tasksFor, wakeFor } from '../../lib/time';
 
 const FEELINGS = [

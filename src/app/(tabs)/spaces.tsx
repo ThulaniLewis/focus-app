@@ -5,7 +5,7 @@ import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { Button, Card, Chip, IconButton, Screen, T } from '../../components/ui';
 import { useStore } from '../../lib/store';
-import { font, radius, space, useColors } from '../../lib/theme';
+import { font, radius, space, useColors } from '../../theme';
 import type { Space } from '../../lib/types';
 import { openIn } from '../../lib/views';
 

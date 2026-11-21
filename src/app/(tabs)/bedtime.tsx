@@ -97,16 +97,16 @@ function BedtimeBody() {
               style={{
                 flex: 1,
                 borderRadius: 32,
-                backgroundColor: on ? D.tealSoft : D.tile,
+                backgroundColor: on ? D.primarySoft : D.tile,
                 borderWidth: isNext ? 4 : 1,
-                borderColor: isNext ? D.teal : D.line,
+                borderColor: isNext ? D.primary : D.line,
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 18,
               }}
             >
               <Text style={{ fontSize: 96, opacity: on ? 0.5 : 1 }}>{s.pic}</Text>
-              <L size={30} display color={on ? D.tealSoftInk : D.ink}>{s.label}</L>
+              <L size={30} display color={on ? D.primaryStrong : D.ink}>{s.label}</L>
               <View style={{ height: 56, justifyContent: 'center' }}>
                 {on ? <Text style={{ fontSize: 48 }}>⭐</Text> : <Icon name="circle" size={44} color={D.line} />}
               </View>

@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { useNow, useStore } from '../lib/store';
 import { isPrivateSpace } from '../lib/sync';
-import { font } from '../lib/theme';
+import { font, mockupExtras, withAlpha } from '../theme';
 import { addMin, agendaFor, dayKey, elapsedSec, fmtDuration, fmtElapsed, fmtTime, roomNameOf } from '../lib/time';
 import type { State } from '../lib/types';
 import { topPicks } from './Focus';
@@ -42,13 +42,13 @@ export function L({ children, size, color = D.ink, display, weight, style, lines
   );
 }
 
-export function Tile({ children, tone = 'plain', onPress, label }: { children: React.ReactNode; tone?: 'plain' | 'teal'; onPress?: () => void; label?: string }) {
+export function Tile({ children, tone = 'plain', onPress, label }: { children: React.ReactNode; tone?: 'plain' | 'primary'; onPress?: () => void; label?: string }) {
   const body = (
     <View
       style={{
         flex: 1,
-        backgroundColor: tone === 'teal' ? D.teal : D.tile,
-        borderWidth: tone === 'teal' ? 0 : 1,
+        backgroundColor: tone === 'primary' ? D.primary : D.tile,
+        borderWidth: tone === 'primary' ? 0 : 1,
         borderColor: D.line,
         borderRadius: 24,
         paddingVertical: 24,
@@ -68,7 +68,7 @@ export function Tile({ children, tone = 'plain', onPress, label }: { children: R
   );
 }
 
-export function BigButton({ label, onPress, ghost, onTeal }: { label: string; onPress: () => void; ghost?: boolean; onTeal?: boolean }) {
+export function BigButton({ label, onPress, ghost, onPrimary }: { label: string; onPress: () => void; ghost?: boolean; onPrimary?: boolean }) {
   return (
     <Pressable
       onPress={onPress}
@@ -78,12 +78,12 @@ export function BigButton({ label, onPress, ghost, onTeal }: { label: string; on
         paddingHorizontal: 30,
         borderRadius: 18,
         justifyContent: 'center',
-        backgroundColor: onTeal ? (ghost ? 'transparent' : D.tealInk) : ghost ? 'transparent' : D.teal,
+        backgroundColor: onPrimary ? (ghost ? 'transparent' : D.onPrimary) : ghost ? 'transparent' : D.primary,
         borderWidth: ghost ? 1 : 0,
-        borderColor: onTeal ? D.tealInk : D.ghost,
+        borderColor: onPrimary ? D.onPrimary : D.ghost,
       }}
     >
-      <L size={22} weight="strong" color={onTeal ? (ghost ? D.tealInk : D.teal) : ghost ? D.ink : D.tealInk}>{label}</L>
+      <L size={22} weight="strong" color={onPrimary ? (ghost ? D.onPrimary : D.primary) : ghost ? D.ink : D.onPrimary}>{label}</L>
     </Pressable>
   );
 }
@@ -95,10 +95,10 @@ function RailButton({ icon, label, active, onPress }: { icon: string; label: str
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: !!active }}
-      style={{ width: 96, height: 84, borderRadius: 22, backgroundColor: active ? D.tealSoft : 'transparent', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+      style={{ width: 96, height: 84, borderRadius: 22, backgroundColor: active ? D.primarySoft : 'transparent', alignItems: 'center', justifyContent: 'center', gap: 4 }}
     >
-      <Icon name={icon} size={30} color={active ? D.tealSoftInk : D.muted} />
-      <L size={16} weight="strong" color={active ? D.tealSoftInk : D.muted}>{label}</L>
+      <Icon name={icon} size={30} color={active ? D.primaryStrong : D.muted} />
+      <L size={16} weight="strong" color={active ? D.primaryStrong : D.muted}>{label}</L>
     </Pressable>
   );
 }
@@ -139,9 +139,9 @@ export function DashShell({ active, children }: { active: DashTab; children: Rea
           onPress={() => router.navigate('/dump')}
           accessibilityRole="button"
           accessibilityLabel="Talk to Focus"
-          style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: D.teal, alignItems: 'center', justifyContent: 'center' }}
+          style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: D.primary, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Icon name="mic" size={40} color={D.tealInk} />
+          <Icon name="mic" size={40} color={D.onPrimary} />
         </Pressable>
       </View>
       <View style={{ flex: 1 }}>{children}</View>
@@ -199,23 +199,23 @@ export function TabletDash() {
   if (isNight(now) && !awake) {
     const f = m.firstMorning;
     return (
-      <Pressable onPress={() => setWokeAt(Date.now())} accessibilityLabel="Wake Focus" style={{ flex: 1, backgroundColor: '#0B0D0E', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
-        <L size={160} display color="#3A4246">{fmtTime(now)}</L>
+      <Pressable onPress={() => setWokeAt(Date.now())} accessibilityLabel="Wake Focus" style={{ flex: 1, backgroundColor: mockupExtras.night.bg, alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+        <L size={160} display color={mockupExtras.night.clock}>{fmtTime(now)}</L>
         {f ? (
           <View style={{ flexDirection: 'row', gap: 24 }}>
-            <View style={{ borderWidth: 1, borderColor: '#1F2528', borderRadius: 24, paddingVertical: 20, paddingHorizontal: 28, gap: 4, minWidth: 300 }}>
-              <L size={16} weight="strong" color="#6E777B">{m.morningIsToday ? 'THIS MORNING, FIRST THING' : 'TOMORROW, FIRST THING'}</L>
-              <L size={28} display color="#6E777B">{`${fmtTime(f.at)} ${f.task.title}`}</L>
+            <View style={{ borderWidth: 1, borderColor: D.tile, borderRadius: 24, paddingVertical: 20, paddingHorizontal: 28, gap: 4, minWidth: 300 }}>
+              <L size={16} weight="strong" color={mockupExtras.night.text}>{m.morningIsToday ? 'THIS MORNING, FIRST THING' : 'TOMORROW, FIRST THING'}</L>
+              <L size={28} display color={mockupExtras.night.text}>{`${fmtTime(f.at)} ${f.task.title}`}</L>
             </View>
             {f.leaveAt ? (
-              <View style={{ borderWidth: 1, borderColor: '#1F2528', borderRadius: 24, paddingVertical: 20, paddingHorizontal: 28, gap: 4, minWidth: 300 }}>
-                <L size={16} weight="strong" color="#6E777B">LEAVE BY</L>
-                <L size={28} display color="#6E777B">{fmtTime(f.leaveAt)}</L>
+              <View style={{ borderWidth: 1, borderColor: D.tile, borderRadius: 24, paddingVertical: 20, paddingHorizontal: 28, gap: 4, minWidth: 300 }}>
+                <L size={16} weight="strong" color={mockupExtras.night.text}>LEAVE BY</L>
+                <L size={28} display color={mockupExtras.night.text}>{fmtTime(f.leaveAt)}</L>
               </View>
             ) : null}
           </View>
         ) : null}
-        <L size={18} color="#6E777B">Tap anywhere to wake Focus</L>
+        <L size={18} color={mockupExtras.night.text}>Tap anywhere to wake Focus</L>
       </Pressable>
     );
   }
@@ -249,8 +249,8 @@ export function TabletDash() {
               </View>
             </View>
             {savHomeOn(state.settings, day) ? (
-              <View style={{ backgroundColor: D.tealSoft, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 }}>
-                <L size={17} weight="strong" color={D.tealSoftInk}>{`Sav's home today · house jobs in her nap or after 19:30`}</L>
+              <View style={{ backgroundColor: D.primarySoft, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 }}>
+                <L size={17} weight="strong" color={D.primaryStrong}>{`Sav's home today · house jobs in her nap or after 19:30`}</L>
               </View>
             ) : null}
             {timers.slice(0, 3).map((t) => {
@@ -260,10 +260,10 @@ export function TabletDash() {
                   key={t.id}
                   onPress={() => router.navigate('/kitchen')}
                   accessibilityLabel={`${t.label}, ${timerLeft(t, now.getTime())}. Open timers`}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: up ? D.teal : D.tealSoft, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: up ? D.primary : D.primarySoft, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 }}
                 >
-                  <Icon name="clock" size={18} color={up ? D.tealInk : D.tealSoftInk} />
-                  <L size={20} weight="strong" color={up ? D.tealInk : D.tealSoftInk}>{`${t.label}  ${timerLeft(t, now.getTime())}`}</L>
+                  <Icon name="clock" size={18} color={up ? D.onPrimary : D.primaryStrong} />
+                  <L size={20} weight="strong" color={up ? D.onPrimary : D.primaryStrong}>{`${t.label}  ${timerLeft(t, now.getTime())}`}</L>
                 </Pressable>
               );
             })}
@@ -296,11 +296,11 @@ export function TabletDash() {
               ) : waiting ? (
                 // Waiting mode: before a visitor, an appointment somewhere or a leave-by time.
                 <>
-                  <L size={18} weight="strong" color={D.teal} style={{ letterSpacing: 1 }}>{`WHILE YOU WAIT · ${waiting.title.toUpperCase()} ${fmtTime(waiting.until)}`}</L>
+                  <L size={18} weight="strong" color={D.primary} style={{ letterSpacing: 1 }}>{`WHILE YOU WAIT · ${waiting.title.toUpperCase()} ${fmtTime(waiting.until)}`}</L>
                   {waitList.length ? (
                     waitList.map((t) => (
                       <Pressable key={t.id} onPress={() => startTimer(t.id)} accessibilityRole="button" accessibilityLabel={`Start ${t.title}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
-                        <Icon name="play-circle" size={28} color={D.teal} />
+                        <Icon name="play-circle" size={28} color={D.primary} />
                         <L size={24} lines={1} style={{ flex: 1 }}>{t.title}</L>
                         {t.estimateMin ? <L size={18} color={D.muted}>{`${t.estimateMin} min`}</L> : null}
                       </Pressable>
@@ -346,17 +346,17 @@ export function TabletDash() {
 
             {/* LEAVE BY */}
             {m.leave?.leaveAt ? (
-              <Tile tone="teal">
-                <L size={18} weight="strong" color={D.tealInk} style={{ letterSpacing: 1 }}>LEAVE BY</L>
+              <Tile tone="primary">
+                <L size={18} weight="strong" color={D.onPrimary} style={{ letterSpacing: 1 }}>LEAVE BY</L>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <L size={88} display color={D.tealInk} style={{ lineHeight: 88 }}>{fmtTime(m.leave.leaveAt)}</L>
-                  <L size={32} display color={D.tealInk}>{minsToLeave === null || minsToLeave < 1 ? 'Now' : minsToLeave < 90 ? `${minsToLeave} min` : fmtDuration(minsToLeave)}</L>
+                  <L size={88} display color={D.onPrimary} style={{ lineHeight: 88 }}>{fmtTime(m.leave.leaveAt)}</L>
+                  <L size={32} display color={D.onPrimary}>{minsToLeave === null || minsToLeave < 1 ? 'Now' : minsToLeave < 90 ? `${minsToLeave} min` : fmtDuration(minsToLeave)}</L>
                 </View>
                 <View style={{ flex: 1 }} />
-                <View style={{ height: 14, borderRadius: 7, backgroundColor: 'rgba(16,32,31,0.2)', overflow: 'hidden' }}>
-                  <View style={{ width: `${Math.round(bar * 100)}%`, height: '100%', backgroundColor: D.tealInk, borderRadius: 7 }} />
+                <View style={{ height: 14, borderRadius: 7, backgroundColor: withAlpha(D.onPrimary, 0.2), overflow: 'hidden' }}>
+                  <View style={{ width: `${Math.round(bar * 100)}%`, height: '100%', backgroundColor: D.onPrimary, borderRadius: 7 }} />
                 </View>
-                <L size={20} color={D.tealInk}>{`${m.leave.task.title} at ${fmtTime(m.leave.at)}.`}</L>
+                <L size={20} color={D.onPrimary}>{`${m.leave.task.title} at ${fmtTime(m.leave.at)}.`}</L>
               </Tile>
             ) : (
               <Tile>
@@ -374,12 +374,12 @@ export function TabletDash() {
               {m.next ? (
                 <>
                   <View style={{ flexDirection: 'row', gap: 20, alignItems: 'baseline' }}>
-                    <L size={38} display color={D.teal}>{fmtTime(m.next.at)}</L>
+                    <L size={38} display color={D.primary}>{fmtTime(m.next.at)}</L>
                     <L size={38} display lines={1} style={{ flex: 1 }}>{m.next.task.title}</L>
                   </View>
                   {m.then ? <L size={22} color={D.muted} lines={2}>{`Then ${m.then.task.title} at ${fmtTime(m.then.at)}`}</L> : null}
                   {m.next.task.grab ? (
-                    <L size={20} weight="strong" color={D.tealSoftInk}>{`Grab ${m.next.task.grab.item} from the ${m.next.task.grab.fromRoom.replace(/-/g, ' ')}`}</L>
+                    <L size={20} weight="strong" color={D.primaryStrong}>{`Grab ${m.next.task.grab.item} from the ${m.next.task.grab.fromRoom.replace(/-/g, ' ')}`}</L>
                   ) : null}
                 </>
               ) : (

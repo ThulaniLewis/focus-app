@@ -6,7 +6,7 @@ import { Icon } from '../../../components/Icon';
 import { TaskRow } from '../../../components/TaskRow';
 import { Card, Check, Chip, Header, IconButton, Screen, Section, T } from '../../../components/ui';
 import { useStore } from '../../../lib/store';
-import { font, radius, space, useColors } from '../../../lib/theme';
+import { font, radius, space, type, useColors } from '../../../theme';
 import { dayKey, fmtTime, parseLocal, slug } from '../../../lib/time';
 import { FOOD_GROUPS, type Space, type Task } from '../../../lib/types';
 import { openInRoom, roomsByFloor } from '../../../lib/views';
@@ -51,7 +51,7 @@ function QuickAdd({ placeholder, onAdd }: { placeholder: string; onAdd: (text: s
         returnKeyType="done"
         placeholder={placeholder}
         placeholderTextColor={c.inkMuted}
-        style={{ flex: 1, fontFamily: font.body, fontSize: 16, color: c.ink, backgroundColor: c.surface, borderRadius: radius.sm, paddingHorizontal: space[3], minHeight: 48, borderWidth: StyleSheet.hairlineWidth, borderColor: c.line }}
+        style={{ flex: 1, fontFamily: font.body, fontSize: type.body.fontSize, color: c.ink, backgroundColor: c.surface, borderRadius: radius.sm, paddingHorizontal: space[3], minHeight: 48, borderWidth: StyleSheet.hairlineWidth, borderColor: c.line }}
       />
       <IconButton name="plus" label="Add" tone="primary" onPress={add} size={48} />
     </View>

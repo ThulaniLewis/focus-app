@@ -7,7 +7,7 @@ import { Button, Card, Check, Screen, Section, T } from '../../components/ui';
 import { isTabletDevice } from '../../lib/device';
 import { easierDay, NAP_MIN } from '../../lib/sleep';
 import { useStore } from '../../lib/store';
-import { space, useColors } from '../../lib/theme';
+import { space, useColors } from '../../theme';
 import { whenLabel } from '../../lib/comeUp';
 import { dayKey } from '../../lib/time';
 

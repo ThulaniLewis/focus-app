@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { openStopFlow } from './Session';
 import { showSheet } from './Sheet';
 import { useNow, useStore } from '../lib/store';
-import { space, useColors } from '../lib/theme';
+import { space, useColors } from '../theme';
 import { dayKey, elapsedSec, estimateRatio, fmtElapsed, fmtTime, isDoneOn, parseLocal, realisticMin, slug } from '../lib/time';
 import type { Room, Space, Task } from '../lib/types';
 import { Check, Chip, Flash, IconButton, T } from './ui';

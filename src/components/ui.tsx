@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../lib/store';
-import { font, radius, space, useColors } from '../lib/theme';
+import { radius, space, type, useColors } from '../theme';
 import { router } from 'expo-router';
 import { ClockBar } from './ClockBar';
 import { Icon } from './Icon';
@@ -23,14 +23,15 @@ const ScrollCtx = createContext<React.RefObject<any> | null>(null);
 
 type Variant = 'display' | 'title' | 'heading' | 'body' | 'bodyStrong' | 'label' | 'caption';
 
+// Straight from the theme's type scale (docs/design/focus-tokens.json).
 const variants: Record<Variant, TextStyle> = {
-  display: { fontFamily: font.display, fontSize: 44, lineHeight: 48 },
-  title: { fontFamily: font.display, fontSize: 28, lineHeight: 34 },
-  heading: { fontFamily: font.display, fontSize: 18, lineHeight: 24 },
-  body: { fontFamily: font.body, fontSize: 16, lineHeight: 24 },
-  bodyStrong: { fontFamily: font.bodyStrong, fontSize: 16, lineHeight: 24 },
-  label: { fontFamily: font.bodyStrong, fontSize: 13, lineHeight: 18 },
-  caption: { fontFamily: font.body, fontSize: 12, lineHeight: 16 },
+  display: type.display,
+  title: type.title,
+  heading: type.heading,
+  body: type.body,
+  bodyStrong: type.bodyStrong,
+  label: type.label,
+  caption: type.caption,
 };
 
 export function T({ v = 'body', muted, color, style, ...rest }: TextProps & { v?: Variant; muted?: boolean; color?: string }) {

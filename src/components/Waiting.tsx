@@ -4,7 +4,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { waitingFor, waitPicks } from '../lib/comeUp';
 import { useNow, useStore } from '../lib/store';
-import { space, useColors } from '../lib/theme';
+import { space, useColors } from '../theme';
 import { fmtTime } from '../lib/time';
 import { Button, Card, T } from './ui';
 

@@ -8,7 +8,7 @@ import { showSheet } from './Sheet';
 import type { DiaryEvent } from '../lib/calendar';
 import { askExactAlarms, askPermission, exactAlarmsAllowed } from '../lib/notify';
 import { useStore } from '../lib/store';
-import { space, useColors } from '../lib/theme';
+import { space, useColors } from '../theme';
 import { type AgendaItem, agendaFor, elapsedSec, fmtElapsed, fmtTime } from '../lib/time';
 import { useNow } from '../lib/store';
 import { diaryOn } from '../lib/views';

@@ -7,7 +7,7 @@ import { Icon } from '../../components/Icon';
 import { BigButton, D, DashShell, L } from '../../components/TabletDash';
 import { useDashMode } from '../../lib/device';
 import { useNow, useStore } from '../../lib/store';
-import { font } from '../../lib/theme';
+import { font } from '../../theme';
 import { agendaFor, dayKey, fmtTime } from '../../lib/time';
 import { timerLeft, useTimers } from '../../lib/timers';
 
@@ -62,7 +62,7 @@ function KitchenBody() {
             placeholder="What's it for? (optional, like Pasta)"
             placeholderTextColor={D.muted}
             accessibilityLabel="Timer name"
-            style={{ minHeight: 56, borderRadius: 16, backgroundColor: '#101314', color: D.ink, paddingHorizontal: 18, fontSize: 20, fontFamily: font.body }}
+            style={{ minHeight: 56, borderRadius: 16, backgroundColor: D.sunken, color: D.ink, paddingHorizontal: 18, fontSize: 20, fontFamily: font.body }}
           />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
             {QUICK.map((m) => (
@@ -71,9 +71,9 @@ function KitchenBody() {
                 onPress={() => start(m)}
                 accessibilityRole="button"
                 accessibilityLabel={`Start a ${m} minute timer`}
-                style={{ width: 112, minHeight: 72, borderRadius: 18, backgroundColor: D.tealSoft, alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 112, minHeight: 72, borderRadius: 18, backgroundColor: D.primarySoft, alignItems: 'center', justifyContent: 'center' }}
               >
-                <L size={24} weight="strong" color={D.tealSoftInk}>{m === 60 ? '1 hour' : `${m} min`}</L>
+                <L size={24} weight="strong" color={D.primaryStrong}>{m === 60 ? '1 hour' : `${m} min`}</L>
               </Pressable>
             ))}
           </View>
@@ -89,18 +89,18 @@ function KitchenBody() {
           return (
             <View
               key={t.id}
-              style={{ backgroundColor: up ? D.teal : D.tile, borderWidth: up ? 0 : 1, borderColor: D.line, borderRadius: 24, padding: 22, gap: 10 }}
+              style={{ backgroundColor: up ? D.primary : D.tile, borderWidth: up ? 0 : 1, borderColor: D.line, borderRadius: 24, padding: 22, gap: 10 }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <L size={24} weight="strong" color={up ? D.tealInk : D.ink}>{t.label}</L>
+                <L size={24} weight="strong" color={up ? D.onPrimary : D.ink}>{t.label}</L>
                 <Pressable onPress={() => remove(t.id)} accessibilityRole="button" accessibilityLabel={`Stop ${t.label}`} hitSlop={12} style={{ padding: 8 }}>
-                  <Icon name="x" size={28} color={up ? D.tealInk : D.muted} />
+                  <Icon name="x" size={28} color={up ? D.onPrimary : D.muted} />
                 </Pressable>
               </View>
-              <L size={72} display color={up ? D.tealInk : D.ink} style={{ lineHeight: 76 }}>{timerLeft(t, now.getTime())}</L>
+              <L size={72} display color={up ? D.onPrimary : D.ink} style={{ lineHeight: 76 }}>{timerLeft(t, now.getTime())}</L>
               <View style={{ flexDirection: 'row', gap: 12 }}>
-                {up ? <BigButton onTeal label="Done" onPress={() => remove(t.id)} /> : null}
-                <BigButton ghost onTeal={up} label="+1 min" onPress={() => addMinute(t.id)} />
+                {up ? <BigButton onPrimary label="Done" onPress={() => remove(t.id)} /> : null}
+                <BigButton ghost onPrimary={up} label="+1 min" onPress={() => addMinute(t.id)} />
               </View>
             </View>
           );

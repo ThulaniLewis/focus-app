@@ -3,7 +3,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useNow, useStore } from '../lib/store';
-import { radius, space, useColors } from '../lib/theme';
+import { radius, space, useColors } from '../theme';
 import { dayKey, elapsedSec, fmtDuration, fmtElapsed, fmtTime, minutesBetween, minutesLeftToday, nextAnchor, roomNameOf } from '../lib/time';
 import { openRoundStop, openStopFlow } from './Session';
 import { T } from './ui';

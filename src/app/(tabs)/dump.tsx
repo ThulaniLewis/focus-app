@@ -12,7 +12,7 @@ import { type JobRef, openJobs } from '../../lib/leftovers';
 import { isTabletDevice } from '../../lib/device';
 import { isPrivateSpace } from '../../lib/sync';
 import { useStore } from '../../lib/store';
-import { font, radius, space, useColors } from '../../lib/theme';
+import { font, radius, space, useColors } from '../../theme';
 import { dayKey, fmtTime, parseLocal } from '../../lib/time';
 import { DAY_SHORT } from '../../lib/views';
 

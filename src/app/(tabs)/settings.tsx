@@ -4,9 +4,10 @@ import { Icon } from '../../components/Icon';
 import { AccountCard, Field } from '../../components/Account';
 import { Button, Card, Header, Screen, Section, T } from '../../components/ui';
 import { calendarAllowed, writeCalendarName } from '../../lib/calendar';
+import { FEATURES, featureOn, switchFeature } from '../../lib/features';
 import type { Floor, Room } from '../../lib/types';
 import { useStore } from '../../lib/store';
-import { font, radius, space, useColors } from '../../lib/theme';
+import { font, radius, space, useColors } from '../../theme';
 import { estimateRatio, isValidHHMM, slug } from '../../lib/time';
 
 
@@ -200,6 +201,28 @@ export default function Settings() {
         ) : (
           <T v="body" muted>Say "Focus note: …" in a dump and your test week feedback collects here.</T>
         )}
+      </Section>
+
+      <Section title="Features" hint="on this device">
+        <Card>
+          {FEATURES.map((f) => (
+            <View key={f.id} style={{ gap: space[1] }}>
+              <Toggle
+                label={f.name}
+                value={featureOn(s, f.id)}
+                onChange={(v) =>
+                  updateSettings({
+                    ...switchFeature(s, f.id, v),
+                    // Switched off: drop questions already waiting, so nothing old pops up when it comes back on.
+                    ...(f.id === 'punctuality' && !v ? { punctualityAsk: [] } : {}),
+                  })
+                }
+              />
+              <T v="caption" muted>{f.about}</T>
+            </View>
+          ))}
+          <T v="caption" muted>{"Turning one off hides it; nothing you've saved is deleted."}</T>
+        </Card>
       </Section>
 
       <Section title="NFC sticker addresses">

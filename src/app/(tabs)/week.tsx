@@ -7,7 +7,7 @@ import { PlanList } from '../../components/Plan';
 import { Card, Chip, Screen, T } from '../../components/ui';
 import { useDiary } from '../../lib/calendar';
 import { useNow, useStore } from '../../lib/store';
-import { space, useColors } from '../../lib/theme';
+import { space, useColors } from '../../theme';
 import { dayKey } from '../../lib/time';
 import { DAY_NAMES, MONTH_SHORT, savSaturday } from '../../lib/views';
 

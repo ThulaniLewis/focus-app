@@ -12,7 +12,7 @@ import { Button, Card, Header, Section, Screen, T } from '../../../components/ui
 import { isTabletDevice, useDashMode } from '../../../lib/device';
 import { useStore } from '../../../lib/store';
 import { openRoundStop } from '../../../components/Session';
-import { space, useColors } from '../../../lib/theme';
+import { space, useColors } from '../../../theme';
 import { agendaFor, dayKey, isDoneOn, slug as toSlug, tasksFor } from '../../../lib/time';
 
 export default function Room() {

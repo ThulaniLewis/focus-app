@@ -2,7 +2,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useNow, useStore } from '../lib/store';
-import { space, useColors } from '../lib/theme';
+import { space, useColors } from '../theme';
 import { dayPlanFor, fmtTime } from '../lib/time';
 import type { State } from '../lib/types';
 import { topPicks } from '../lib/picks';

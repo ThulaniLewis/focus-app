@@ -7,7 +7,7 @@ import { isTabletDevice } from '../lib/device';
 import { askForSleep, readRecentNights, sleepAvailable } from '../lib/healthSleep';
 import { lastTwo, shortNightLine } from '../lib/sleep';
 import { useNow, useStore } from '../lib/store';
-import { space } from '../lib/theme';
+import { space } from '../theme';
 import { dayKey } from '../lib/time';
 import { Button, Card, T } from './ui';
 

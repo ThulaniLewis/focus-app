@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { isTracked, keyOf, LATE_CHOICES, lastFor, patternLine, suggestDropTime } from '../lib/punctuality';
 import { useNow, useStore } from '../lib/store';
-import { space, useColors } from '../lib/theme';
+import { space, useColors } from '../theme';
 import { dayKey } from '../lib/time';
 import { showSheet } from './Sheet';
 import { isTabletDevice } from '../lib/device';

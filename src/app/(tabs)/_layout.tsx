@@ -3,7 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
-import { font, useColors } from '../../lib/theme';
+import { font, type, useColors } from '../../theme';
 import { useDashMode } from '../../lib/device';
 
 // Screens that live in the tabs but have no button. (href: null resets the tabs when you open them.)
@@ -26,7 +26,7 @@ export default function TabsLayout() {
           dash && route.name === 'index'
             ? { display: 'none' }
             : { backgroundColor: c.surfaceRaised, borderTopColor: c.line, height: 70 + insets.bottom, paddingBottom: insets.bottom + 6, paddingTop: 6 },
-        tabBarLabelStyle: { fontFamily: font.bodyStrong, fontSize: 12 },
+        tabBarLabelStyle: { fontFamily: font.bodyStrong, fontSize: type.caption.fontSize },
         sceneStyle: { backgroundColor: c.bg },
       })}
     >

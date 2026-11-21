@@ -5,7 +5,7 @@ import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Button, Card, Screen, T } from '../components/ui';
 import { useStore } from '../lib/store';
-import { space, useColors } from '../lib/theme';
+import { space, useColors } from '../theme';
 import { router } from 'expo-router';
 
 export default function Auth() {

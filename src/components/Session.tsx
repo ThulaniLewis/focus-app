@@ -6,7 +6,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { claimMic, micOwner, releaseMic } from '../lib/mic';
 import { useNow, useStore } from '../lib/store';
-import { font, radius, space, useColors } from '../lib/theme';
+import { font, radius, scrim, space, useColors } from '../theme';
 import { elapsedSec, fmtElapsed } from '../lib/time';
 import { Icon } from './Icon';
 import { howItWent, whyNow } from '../lib/support';
@@ -224,7 +224,7 @@ export function SessionHost() {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={close} statusBarTranslucent>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' }} onPress={close} accessibilityLabel="Close" />
+      <Pressable style={{ flex: 1, backgroundColor: scrim.phone }} onPress={close} accessibilityLabel="Close" />
       <View
         style={{
           backgroundColor: c.surfaceRaised,

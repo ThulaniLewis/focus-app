@@ -139,6 +139,8 @@ export type Settings = {
   punctualityAsk?: { taskId: string; day: string }[];
   /** On this device: "Not yet" to a suggested new time, until when (ISO), by job key. */
   punctualityNotYet?: Record<string, string>;
+  /** On this device: features switched off in Focus settings (missing means on). See lib/features.ts. */
+  features?: Partial<Record<import('./features').FeatureId, boolean>>;
 };
 
 /** One answer to "how did it go?". lateMin 0 is on time; otherwise roughly 5, 10, 20 or 30 (30 or more). */

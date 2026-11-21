@@ -12,7 +12,7 @@ import { type ComeUpPlan, type Move, nurseryMessage, sickDayMoves } from '../../
 import { useDashMode } from '../../lib/device';
 import { claimMic, micOwner, releaseMic } from '../../lib/mic';
 import { useStore } from '../../lib/store';
-import { font, radius, space, useColors } from '../../lib/theme';
+import { font, radius, space, useColors } from '../../theme';
 import { fmtTime, parseLocal } from '../../lib/time';
 
 const MIC = 'comeup';

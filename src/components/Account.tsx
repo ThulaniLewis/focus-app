@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { TextInput } from 'react-native';
 import { useStore } from '../lib/store';
-import { font, radius, space, useColors } from '../lib/theme';
+import { font, radius, space, type, useColors } from '../theme';
 import { Button, Card, T } from './ui';
 
 export function Field(props: React.ComponentProps<typeof TextInput>) {
@@ -19,7 +19,7 @@ export function Field(props: React.ComponentProps<typeof TextInput>) {
           paddingHorizontal: space[3],
           color: c.ink,
           fontFamily: font.body,
-          fontSize: 16,
+          fontSize: type.body.fontSize,
         },
         props.style,
       ]}
