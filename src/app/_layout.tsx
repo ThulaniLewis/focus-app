@@ -1,4 +1,6 @@
 import { Lexend_600SemiBold } from '@expo-google-fonts/lexend';
+import { schemeFor, windDownAt } from '../lib/look';
+import { dayKey } from '../lib/time';
 import {
   AtkinsonHyperlegibleNext_400Regular,
   AtkinsonHyperlegibleNext_500Medium,
@@ -29,13 +31,23 @@ import { installCrashLog } from '../lib/crash';
 import { setupNotifications } from '../lib/notify';
 
 installCrashLog();
-import { StoreProvider, useStore } from '../lib/store';
+import { StoreProvider, useNow, useStore } from '../lib/store';
 import { TimersProvider } from '../lib/timers';
-import { colors, radius, space, type, useColors } from '../theme';
+import { colors, radius, SchemeProvider, space, type, useColors, useScheme } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+/** Light or dark for the whole app, from Settings > Look. Match phone: light by day, dark from wind down. */
+function LookRoot({ children }: { children: React.ReactNode }) {
+  const { state } = useStore();
+  const now = useNow(60000);
+  const day = dayKey(now);
+  const windDown = React.useMemo(() => windDownAt(state, day), [state, day]);
+  return <SchemeProvider value={schemeFor(state.settings.look, now, windDown)}>{children}</SchemeProvider>;
+}
+
 function Gate() {
+  const scheme = useScheme();
   const { ready, state } = useStore();
   const c = useColors();
   useEffect(() => {
@@ -47,7 +59,7 @@ function Gate() {
   if (!ready) return <View style={{ flex: 1, backgroundColor: c.bg }} />;
   return (
     <>
-      <StatusBar style="auto" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth" />
@@ -96,7 +108,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <StoreProvider>
         <TimersProvider>
-          <Gate />
+          <LookRoot>
+            <Gate />
+          </LookRoot>
         </TimersProvider>
       </StoreProvider>
     </SafeAreaProvider>

@@ -141,6 +141,8 @@ export type Settings = {
   punctualityNotYet?: Record<string, string>;
   /** On this device: features switched off in Focus settings (missing means on). See lib/features.ts. */
   features?: Partial<Record<import('./features').FeatureId, boolean>>;
+  /** On this device: Light, Dark, or Match phone (light by day, dark from wind down). Missing means Match phone. */
+  look?: import('./look').Look;
 };
 
 /** One answer to "how did it go?". lateMin 0 is on time; otherwise roughly 5, 10, 20 or 30 (30 or more). */

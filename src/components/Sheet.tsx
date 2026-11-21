@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { font, radius, scrim, space, useColors } from '../theme';
-import { D } from './dashPalette';
+import { useDash } from './dashPalette';
 import { Icon } from './Icon';
 import { T } from './ui';
 
@@ -20,6 +20,7 @@ export function showSheet(spec: SheetSpec) {
 }
 
 export function SheetHost() {
+  const D = useDash();
   const c = useColors();
   const insets = useSafeAreaInsets();
   const [spec, setSpec] = useState<SheetSpec | null>(null);

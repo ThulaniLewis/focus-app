@@ -18,7 +18,11 @@ export const lightColors = {
   cautionSoft: "#F3DFD9",
   cautionInk: "#6E3226",
   private: "#3A2A2F",
-  onPrivate: "#FFFFFF"
+  onPrivate: "#FFFFFF",
+  outline: "#B3A2A7",
+  nightBg: "#08090A",
+  nightClock: "#9A8A8F",
+  nightText: "#7E6E73"
 } as const;
 
 export const darkColors: { [K in keyof typeof lightColors]: string } = {
@@ -39,7 +43,11 @@ export const darkColors: { [K in keyof typeof lightColors]: string } = {
   cautionSoft: "#40261F",
   cautionInk: "#F0C4B8",
   private: "#F1E7E9",
-  onPrivate: "#1C1719"
+  onPrivate: "#1C1719",
+  outline: "#5A4A50",
+  nightBg: "#08090A",
+  nightClock: "#9A8A8F",
+  nightText: "#7E6E73"
 };
 
 /** Font files these styles need. Every one must be loaded in src/app/_layout.tsx. */

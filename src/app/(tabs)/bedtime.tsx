@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
-import { D, DashShell, L } from '../../components/TabletDash';
+import { DashShell, L, useDash } from '../../components/TabletDash';
 import { useDashMode } from '../../lib/device';
 import { useNow } from '../../lib/store';
 import { dayKey } from '../../lib/time';
@@ -20,6 +20,7 @@ const STEPS = [
 const KEY = 'focus.bedtime.v1';
 
 export default function Bedtime() {
+  const D = useDash();
   const dash = useDashMode();
   const body = <BedtimeBody />;
   return dash ? (
@@ -43,6 +44,7 @@ function bedtimeDay(now: Date) {
 }
 
 function BedtimeBody() {
+  const D = useDash();
   const now = useNow(60000);
   const day = bedtimeDay(now);
   const [done, setDone] = useState<string[]>([]);

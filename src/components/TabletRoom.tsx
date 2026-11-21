@@ -10,16 +10,20 @@ import { openAvoidSheet } from './Avoid';
 import { Icon } from './Icon';
 import { openRoundStop, openStopFlow } from './Session';
 import { showSheet } from './Sheet';
-import { BigButton, D, L } from './TabletDash';
+import { BigButton, L, useDash } from './TabletDash';
 import { withAlpha } from '../theme';
 
 const LABEL = { letterSpacing: 1 };
 
-function Card({ children, bg = D.tile, border = D.line, radius = 24, style }: { children: React.ReactNode; bg?: string; border?: string; radius?: number; style?: object }) {
+function Card({ children, bg: bgIn, border: borderIn, radius = 24, style }: { children: React.ReactNode; bg?: string; border?: string; radius?: number; style?: object }) {
+  const D = useDash();
+  const bg = bgIn ?? D.tile;
+  const border = borderIn ?? D.line;
   return <View style={[{ backgroundColor: bg, borderWidth: border === 'none' ? 0 : 1, borderColor: border, borderRadius: radius, padding: 24, gap: 12 }, style]}>{children}</View>;
 }
 
 function Chip({ label, tone }: { label: string; tone: 'nudge' | 'plain' | 'primary' }) {
+  const D = useDash();
   const bg = tone === 'nudge' ? D.nudgeSoft : tone === 'primary' ? D.primarySoft : 'transparent';
   const ink = tone === 'nudge' ? D.nudgeInk : tone === 'primary' ? D.primaryStrong : D.muted;
   return (
@@ -31,6 +35,7 @@ function Chip({ label, tone }: { label: string; tone: 'nudge' | 'plain' | 'prima
 
 /** A big solid button in the amber card. */
 function NudgeButton({ label, onPress, ghost }: { label: string; onPress: () => void; ghost?: boolean }) {
+  const D = useDash();
   return (
     <Pressable
       onPress={onPress}
@@ -53,6 +58,7 @@ function NudgeButton({ label, onPress, ghost }: { label: string; onPress: () => 
 }
 
 function GhostButton({ label, onPress, icon }: { label: string; onPress: () => void; icon?: string }) {
+  const D = useDash();
   return (
     <Pressable
       onPress={onPress}
@@ -67,6 +73,7 @@ function GhostButton({ label, onPress, icon }: { label: string; onPress: () => v
 
 /** A ring of ticks that fills as time passes (no native drawing library needed). */
 function Ring({ size, progress, children }: { size: number; progress: number; children: React.ReactNode }) {
+  const D = useDash();
   const n = 60;
   const on = Math.round(Math.max(0, Math.min(1, progress)) * n);
   const r = size / 2 - 12;
@@ -91,6 +98,7 @@ function Ring({ size, progress, children }: { size: number; progress: number; ch
 }
 
 function JobRow({ job, onToggle, first }: { job: RoomJob; onToggle: () => void; first: boolean }) {
+  const D = useDash();
   const struck = job.done && !job.started;
   return (
     <Pressable
@@ -130,6 +138,7 @@ function JobRow({ job, onToggle, first }: { job: RoomJob; onToggle: () => void; 
 }
 
 export function TabletRoom({ room, fromTag }: { room: string; fromTag: boolean }) {
+  const D = useDash();
   const store = useStore();
   const { state, startRound, pauseRound, pauseTimer, startTimer, toggleDone, markJobs, setRooms } = store;
   const now = useNow(1000);

@@ -76,6 +76,7 @@ Work stage by stage. **At the end of every stage: tests pass, commit, then stop 
 ### Stage 4: Meals and money
 - Item 12, meals: setup chat (health goals phone only), one recipe a day on the Cook dinner checkpoint, "What's in your fridge?", "Shall we go shopping?", shopping list email drafted for her to send.
 - Item 20, money check-up: statement upload (PDF or CSV) to the Edge Function, summary only, debts asked not guessed, goal, neutral plan options, guardrail wording ("a friendly guide, not a financial adviser", MoneyHelper and StepChange for debt). Phone only, never spoken.
+- Added 21 Nov: **safe to spend**, one number for what is safe to spend today after bills and goals, shown in Money and in the phone only "Just for you" section on Today. Plus a **bills tracker** that resets monthly, an optional **spend cap**, and **savings goals**. All phone only, never spoken, never synced.
 - Money plan workbook: read only from OneDrive (built in Stage 5 when Microsoft is connected; until then, stub the reader).
 
 ### Stage 5: Integrations (switches)

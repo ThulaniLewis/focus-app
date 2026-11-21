@@ -99,6 +99,10 @@ Then: work back through it on the devices, using the dev report and "Note for Cl
     - **"What's your goal?"** Clear a card, build a buffer, save for the house with land, or stop the month running out early.
     - **The plan.** Simple options laid out neutrally, e.g. highest interest first (saves most) or smallest debt first (quicker wins, often better with ADHD). She chooses. The plan becomes normal Focus: payday checkpoints, bill nudges, a monthly money check-in.
     - **Money plan workbook.** The ongoing plan lives in an Excel workbook (bills with due days, payday, budget, subscriptions, renewals, goals) that Focus reads but never edits; she edits it in Excel. Likely route: the workbook on OneDrive, read through Microsoft Graph, reusing the Outlook connection. Focus can draft the first version from the check-up.
+    - **Safe to spend (added 21 Nov).** One number: what is safe to spend today after bills and goals. Shown in Money and in the phone only "Just for you" section on Today (item 21).
+    - **Bills tracker (added 21 Nov).** Each bill ticks off when paid and the list resets monthly.
+    - **Spend cap (added 21 Nov, optional).** A monthly or weekly cap she sets; safe to spend counts it.
+    - **Savings goals (added 21 Nov).** Named goals with a target; safe to spend sets their share aside first.
     - **Guardrails.** A friendly guide, not a financial adviser: says so once, plainly, no lecturing. If debt looks heavy, it points to free proper help (MoneyHelper, StepChange). Never moves money, never judges ("That month was tight. Want to look at next month together?").
 21. **Phone Today: "Just for you".** The phone's Today screen has a private section under the shared plan: money (payday, bills, renewals), people nudges, sleep, Just for me. Marked Phone only. An eye button hides the whole section with one tap (for when someone's looking at the phone) and shows it again with another. Never on the tablet, never read aloud.
 

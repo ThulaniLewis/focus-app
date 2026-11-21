@@ -156,6 +156,38 @@
      "dark": "#1C1719"
     },
     "usage": "Text and icons on private."
+   },
+   {
+    "name": "outline",
+    "value": {
+     "light": "#B3A2A7",
+     "dark": "#5A4A50"
+    },
+    "usage": "Edge of outline buttons and plain chips. The control edge that line must never be."
+   },
+   {
+    "name": "night-bg",
+    "value": {
+     "light": "#08090A",
+     "dark": "#08090A"
+    },
+    "usage": "Tablet night, dimmed (dark only, so the same in both)."
+   },
+   {
+    "name": "night-clock",
+    "value": {
+     "light": "#9A8A8F",
+     "dark": "#9A8A8F"
+    },
+    "usage": "The big clock on the dimmed night screen."
+   },
+   {
+    "name": "night-text",
+    "value": {
+     "light": "#7E6E73",
+     "dark": "#7E6E73"
+    },
+    "usage": "Labels and the first-thing cards on the dimmed night screen."
    }
   ]
  },

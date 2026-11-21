@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { useNow, useStore } from '../lib/store';
 import { isPrivateSpace } from '../lib/sync';
-import { font, mockupExtras, withAlpha } from '../theme';
+import { font, withAlpha } from '../theme';
 import { addMin, agendaFor, dayKey, elapsedSec, fmtDuration, fmtElapsed, fmtTime, roomNameOf } from '../lib/time';
 import type { State } from '../lib/types';
 import { topPicks } from './Focus';
@@ -19,8 +19,8 @@ import { avoidFirst } from '../lib/roomMode';
 import { savHomeOn, waitingFor, waitPicks } from '../lib/comeUp';
 import { openAvoidSheet } from './Avoid';
 
-import { D } from './dashPalette';
-export { D };
+import { useDash } from './dashPalette';
+export { useDash };
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -28,7 +28,9 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 /** Night: from 22:00 to 06:30 the Dash dims right down to the clock and tomorrow's first thing. */
 const isNight = (d: Date) => d.getHours() >= 22 || d.getHours() * 60 + d.getMinutes() < 6 * 60 + 30;
 
-export function L({ children, size, color = D.ink, display, weight, style, lines }: { children: React.ReactNode; size: number; color?: string; display?: boolean; weight?: 'strong'; style?: object; lines?: number }) {
+export function L({ children, size, color: colorIn, display, weight, style, lines }: { children: React.ReactNode; size: number; color?: string; display?: boolean; weight?: 'strong'; style?: object; lines?: number }) {
+  const D = useDash();
+  const color = colorIn ?? D.ink;
   return (
     <Text
       numberOfLines={lines}
@@ -43,6 +45,7 @@ export function L({ children, size, color = D.ink, display, weight, style, lines
 }
 
 export function Tile({ children, tone = 'plain', onPress, label }: { children: React.ReactNode; tone?: 'plain' | 'primary'; onPress?: () => void; label?: string }) {
+  const D = useDash();
   const body = (
     <View
       style={{
@@ -69,6 +72,7 @@ export function Tile({ children, tone = 'plain', onPress, label }: { children: R
 }
 
 export function BigButton({ label, onPress, ghost, onPrimary }: { label: string; onPress: () => void; ghost?: boolean; onPrimary?: boolean }) {
+  const D = useDash();
   return (
     <Pressable
       onPress={onPress}
@@ -89,6 +93,7 @@ export function BigButton({ label, onPress, ghost, onPrimary }: { label: string;
 }
 
 function RailButton({ icon, label, active, onPress }: { icon: string; label: string; active?: boolean; onPress: () => void }) {
+  const D = useDash();
   return (
     <Pressable
       onPress={onPress}
@@ -123,6 +128,7 @@ export type DashTab = 'today' | 'kitchen' | 'sav' | 'room';
 
 /** The tablet's frame: a rail of big buttons down the left, the screen on the right. */
 export function DashShell({ active, children }: { active: DashTab; children: React.ReactNode }) {
+  const D = useDash();
   const { state } = useStore();
   const shopping = state.spaces.find((s) => s.kind === 'shopping');
   return (
@@ -179,6 +185,7 @@ export function dashModel(state: State, now: Date) {
 }
 
 export function TabletDash() {
+  const D = useDash();
   useKeepAwake(); // stays on while the Dash is showing (it lives on the charger)
   const store = useStore();
   const { state, startTimer, toggleDone, waitingNotNow } = store;
@@ -199,23 +206,23 @@ export function TabletDash() {
   if (isNight(now) && !awake) {
     const f = m.firstMorning;
     return (
-      <Pressable onPress={() => setWokeAt(Date.now())} accessibilityLabel="Wake Focus" style={{ flex: 1, backgroundColor: mockupExtras.night.bg, alignItems: 'center', justifyContent: 'center', gap: 40 }}>
-        <L size={160} display color={mockupExtras.night.clock}>{fmtTime(now)}</L>
+      <Pressable onPress={() => setWokeAt(Date.now())} accessibilityLabel="Wake Focus" style={{ flex: 1, backgroundColor: D.nightBg, alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+        <L size={160} display color={D.nightClock}>{fmtTime(now)}</L>
         {f ? (
           <View style={{ flexDirection: 'row', gap: 24 }}>
             <View style={{ borderWidth: 1, borderColor: D.tile, borderRadius: 24, paddingVertical: 20, paddingHorizontal: 28, gap: 4, minWidth: 300 }}>
-              <L size={16} weight="strong" color={mockupExtras.night.text}>{m.morningIsToday ? 'THIS MORNING, FIRST THING' : 'TOMORROW, FIRST THING'}</L>
-              <L size={28} display color={mockupExtras.night.text}>{`${fmtTime(f.at)} ${f.task.title}`}</L>
+              <L size={16} weight="strong" color={D.nightText}>{m.morningIsToday ? 'THIS MORNING, FIRST THING' : 'TOMORROW, FIRST THING'}</L>
+              <L size={28} display color={D.nightText}>{`${fmtTime(f.at)} ${f.task.title}`}</L>
             </View>
             {f.leaveAt ? (
               <View style={{ borderWidth: 1, borderColor: D.tile, borderRadius: 24, paddingVertical: 20, paddingHorizontal: 28, gap: 4, minWidth: 300 }}>
-                <L size={16} weight="strong" color={mockupExtras.night.text}>LEAVE BY</L>
-                <L size={28} display color={mockupExtras.night.text}>{fmtTime(f.leaveAt)}</L>
+                <L size={16} weight="strong" color={D.nightText}>LEAVE BY</L>
+                <L size={28} display color={D.nightText}>{fmtTime(f.leaveAt)}</L>
               </View>
             ) : null}
           </View>
         ) : null}
-        <L size={18} color={mockupExtras.night.text}>Tap anywhere to wake Focus</L>
+        <L size={18} color={D.nightText}>Tap anywhere to wake Focus</L>
       </Pressable>
     );
   }

@@ -1,10 +1,8 @@
-// The tablet Dash colours: the theme's dark set (the Dash is dark today). In their own file so sheets
-// can use them without importing the Dash.
-import { colors } from '../theme';
+// The tablet Dash colours, named for the Dash, following light or dark like the rest of Focus.
+// In their own file so sheets can use them without importing the Dash.
+import { colors, useScheme, type Colors } from '../theme';
 
-const k = colors.dark;
-
-export const D = {
+const dashOf = (k: Colors) => ({
   bg: k.bg,
   rail: k.surface,
   tile: k.surface,
@@ -19,4 +17,14 @@ export const D = {
   nudgeInk: k.nudgeInk,
   sunken: k.surfaceSunken,
   ghost: k.outline,
-};
+  nightBg: k.nightBg,
+  nightClock: k.nightClock,
+  nightText: k.nightText,
+});
+
+export type DashColors = ReturnType<typeof dashOf>;
+const dash = { light: dashOf(colors.light), dark: dashOf(colors.dark) };
+
+export function useDash(): DashColors {
+  return dash[useScheme()];
+}

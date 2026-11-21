@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Icon } from '../../components/Icon';
-import { BigButton, D, DashShell, L } from '../../components/TabletDash';
+import { BigButton, DashShell, L, useDash } from '../../components/TabletDash';
 import { useDashMode } from '../../lib/device';
 import { useNow, useStore } from '../../lib/store';
 import { font } from '../../theme';
@@ -14,6 +14,7 @@ import { timerLeft, useTimers } from '../../lib/timers';
 const QUICK = [1, 3, 5, 10, 15, 20, 30, 45, 60];
 
 export default function Kitchen() {
+  const D = useDash();
   const dash = useDashMode();
   const body = <KitchenBody />;
   return dash ? (
@@ -30,6 +31,7 @@ export default function Kitchen() {
 }
 
 function KitchenBody() {
+  const D = useDash();
   const { timers, add, addMinute, remove } = useTimers();
   const { state } = useStore();
   const now = useNow(1000);

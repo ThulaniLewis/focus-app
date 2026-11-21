@@ -5,6 +5,7 @@ import { AccountCard, Field } from '../../components/Account';
 import { Button, Card, Header, Screen, Section, T } from '../../components/ui';
 import { calendarAllowed, writeCalendarName } from '../../lib/calendar';
 import { FEATURES, featureOn, switchFeature } from '../../lib/features';
+import { LOOKS } from '../../lib/look';
 import type { Floor, Room } from '../../lib/types';
 import { useStore } from '../../lib/store';
 import { font, radius, space, useColors } from '../../theme';
@@ -54,6 +55,39 @@ export default function Settings() {
   return (
     <Screen>
       <Header title="Settings" />
+
+      <Section title="Look">
+        <Card>
+          <T v="bodyStrong">Light or dark</T>
+          <View style={{ flexDirection: 'row', gap: space[2] }} accessibilityRole="radiogroup">
+            {LOOKS.map((l) => {
+              const on = (s.look ?? 'match') === l.id;
+              return (
+                <Pressable
+                  key={l.id}
+                  onPress={() => updateSettings({ look: l.id })}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={l.label}
+                  style={{
+                    flex: 1,
+                    minHeight: 44,
+                    borderRadius: radius.sm,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: on ? c.primary : 'transparent',
+                    borderWidth: on ? 0 : 1,
+                    borderColor: c.outline,
+                  }}
+                >
+                  <T v="label" color={on ? c.onPrimary : c.ink}>{l.label}</T>
+                </Pressable>
+              );
+            })}
+          </View>
+          <T v="caption" muted>Match phone goes dark from wind down.</T>
+        </Card>
+      </Section>
 
       <Section title="Account">
         <AccountCard />
