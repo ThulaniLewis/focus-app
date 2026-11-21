@@ -32,7 +32,7 @@ Places she has travel times for: ${places}.
 
 Kinds:
 - "event": has a fixed time (appointment, drop off, meeting, call, interview). Give "at" as local YYYY-MM-DDTHH:MM. If only a day is known with no time, use 09:00 and say so in the title ("Interview (time tbc)").
-- "task": something to do with no fixed time. Most things are tasks. Never invent a time for a task: no time pressure that isn't real. If it's for a particular day, set "day". If it has a real deadline ("by 12 tomorrow", "closes Friday 5pm"), set "due" as local YYYY-MM-DDTHH:MM.
+- "task": something to do with no fixed time. Most things are tasks. Never invent a time for a task: no time pressure that isn't real. If it's for a particular day, set "day". If it has a real deadline ("by 12 tomorrow", "closes Friday 5pm"), set "due" as local YYYY-MM-DDTHH:MM. If the deadline has a day but no time ("closes 23 Nov"), set "due" as YYYY-MM-DD only; never invent a time.
 - "buy": something to buy. Set "list": "food" for groceries, or "other" for anything else (clothes, books, gifts, Sav's things, home). For food, "group" is exactly one of: ${FOOD_GROUPS.join(', ')}. For other, "group" is a short type like Clothes, Books, Sav, Home, Gifts.
 - "note": something worth keeping that is not a task: a thought, a feeling, something about a person, an idea, a memory. These are private and go in the private space. When something personal could be either, choose "note".
 
@@ -75,7 +75,7 @@ const TOOL = {
             },
             at: { type: 'string', description: 'Events only: local YYYY-MM-DDTHH:MM' },
             day: { type: 'string', description: 'Tasks for a particular day: YYYY-MM-DD' },
-            due: { type: 'string', description: 'A real deadline: local YYYY-MM-DDTHH:MM' },
+            due: { type: 'string', description: 'A real deadline: local YYYY-MM-DDTHH:MM, or YYYY-MM-DD when only the day is known' },
             repeat_days: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 6 } },
             place: { type: 'string' },
             estimate_min: { type: 'integer', minimum: 1 },
@@ -95,8 +95,14 @@ const TOOL = {
 
 export class ClaudeError extends Error {}
 
+/** Told about every call's token use, for the dev report. Set by the store. */
+let usageListener: ((u: { call: string; model: string; inputTokens: number; outputTokens: number }) => void) | null = null;
+export function onClaudeUsage(fn: typeof usageListener) {
+  usageListener = fn;
+}
+
 /** Send a request through the focus-claude function (the Anthropic key lives there, never on the phone). */
-async function callClaude(body: object, settings: Settings): Promise<any> {
+async function callClaude(body: object, settings: Settings, call = 'dump'): Promise<any> {
   if (!configured) throw new ClaudeError('Focus is not connected to Supabase yet. Add your project details in src/config.ts and rebuild.');
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new ClaudeError('Sign in once in Settings so Focus can reach Claude.');
@@ -127,6 +133,9 @@ async function callClaude(body: object, settings: Settings): Promise<any> {
     }
     throw new ClaudeError('Something went wrong reaching Claude. Try again.');
   }
+  const u = (data as any)?.usage;
+  if (u && usageListener)
+    usageListener({ call, model: String((data as any)?.model ?? settings.model), inputTokens: Number(u.input_tokens ?? 0) + Number(u.cache_read_input_tokens ?? 0) + Number(u.cache_creation_input_tokens ?? 0), outputTokens: Number(u.output_tokens ?? 0) });
   return data;
 }
 
@@ -194,6 +203,7 @@ export async function reworkDay(text: string, state: State, now = new Date()): P
       messages: [{ role: 'user', content: text }],
     },
     settings,
+    'something came up',
   );
   const block = data?.content?.find((c: any) => c.type === 'tool_use');
   if (!block) throw new ClaudeError("Claude didn't sort that one. Try saying it a different way.");
@@ -224,6 +234,7 @@ export async function checkIn(opts: {
       messages: [{ role: 'user', content: checkInMessage(opts.turns) }],
     },
     settings,
+    'stop check in',
   );
   const block = data?.content?.find((c: any) => c.type === 'tool_use');
   if (!block) throw new ClaudeError("Claude didn't sort that one.");

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your routine: anchors and exceptions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&amp;family=Lexend:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#9C4F67}a:hover{color:#6E2F45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FBF3F4; color: #3A2A2F; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 16px; line-height: 24px; display: flex; flex-direction: column; overflow: hidden">
+<header style="padding: 28px 20px 8px">
+<h1 style="margin: 0; font-family: Lexend, system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 600">Your routine</h1>
+<p style="margin: 4px 0 0; color: #6E5A60">Everything else hangs off these. Change one and the rest moves with it.</p>
+</header>
+<main style="padding: 8px 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 4px 16px">
+<p style="margin: 10px 0 2px; font-size: 13px; font-weight: 600; color: #6E5A60">Anchors</p>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 52px; border-bottom: 1px solid #EBD9DD"><span>Sav's bedtime</span><span style="display: flex; gap: 8px; align-items: center"><span style="font-weight: 600">20:00</span><span style="background: #F4DDE3; color: #6E2F45; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600">New</span></span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 52px; border-bottom: 1px solid #EBD9DD"><span>Nursery drop</span><span style="font-weight: 600">By 08:30</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 52px; border-bottom: 1px solid #EBD9DD"><span>Pick-up</span><span style="font-weight: 600">Latest 17:45</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 52px; border-bottom: 1px solid #EBD9DD"><span>Wind down</span><span style="font-weight: 600">21:00</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 52px"><span>Niall's usual days</span><span style="font-weight: 600">[Usual days]</span></div>
+</section>
+<section style="background: #FCE6D8; color: #6B3A1E; border-radius: 18px; padding: 14px 16px">
+<p style="margin: 0; font-size: 13px; font-weight: 600">One-off</p>
+<p style="margin: 4px 0 0; font-weight: 600">Thu 27 Nov: Niall has Sav</p>
+<p style="margin: 2px 0 0">That day's reshaped, then back to normal</p>
+</section>
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 14px 16px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; color: #6E5A60">Coming up</p>
+<p style="margin: 4px 0 0; font-weight: 600">Sav starts school</p>
+<p style="margin: 2px 0 10px; color: #6E5A60">School run, term dates, after school club and PE kit days, all set up from her first day</p>
+<button style="height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #6E5A60; background: transparent; color: #3A2A2F; font: inherit">Set up when you know the date</button>
+</section>
+<p style="margin: 0; color: #6E5A60">Or just say it in a check-in.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

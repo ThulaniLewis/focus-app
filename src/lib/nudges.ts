@@ -5,6 +5,18 @@ import type { State, Task } from './types';
 import { whyNow } from './support';
 import { houseBlocked } from './comeUp';
 
+/** When a date-only deadline's countdown alerts go off. A reminder time, not a job time. */
+export const DEADLINE_MORNING = '09:00';
+/** Days before a date-only deadline, and what the alert says. */
+export const DAY_COUNTDOWN: [number, string][] = [
+  [3, '3 days left'],
+  [1, 'Due tomorrow'],
+  [0, 'Due today'],
+];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** "23 Nov" */
+export const fmtDueDay = (day: string) => `${Number(day.slice(8, 10))} ${MONTHS[Number(day.slice(5, 7)) - 1]}`;
+
 const GET_READY_MIN = 15;
 const HEADS_UP_MIN = 15;
 export const NAG = 'nag';
@@ -169,6 +181,24 @@ export function plan(state: State, now: Date): Planned[] {
     if (addMin(due, -60).getTime() > startBy.getTime() + 10 * 60000)
       out.push({ at: addMin(due, -60), title: `1 hour left: ${t.title}`, body: `Due at ${fmtTime(due)}.`, ref: { taskId: t.id, day }, loud: true, thread: `job-${t.id}` });
     out.push({ at: due, title: `Due now: ${t.title}`, body: 'Send it as it is if you need to. Done beats perfect.', ref: { taskId: t.id, day }, loud: true, thread: `job-${t.id}` });
+  }
+
+  // Deadlines with a date but no time count down by day: 3 days, 1 day, and the morning of.
+  for (const t of state.tasks) {
+    if (!t.dueDay || t.done || isPrivateSpace(t.spaceId, state.spaces)) continue;
+    const dueDate = parseLocal(`${t.dueDay}T${DEADLINE_MORNING}`);
+    if (!dueDate) continue;
+    for (const [daysBefore, title] of DAY_COUNTDOWN) {
+      const at = addMin(dueDate, -daysBefore * 24 * 60);
+      out.push({
+        at,
+        title: `${title}: ${t.title}`,
+        body: daysBefore ? `Due ${fmtDueDay(t.dueDay)}. It's on your next list.` : 'Due today. Send it as it is if you need to. Done beats perfect.',
+        ref: { taskId: t.id, day: dayKey(at) },
+        loud: true,
+        thread: `job-${t.id}`,
+      });
+    }
   }
 
   for (const t of state.tasks) {

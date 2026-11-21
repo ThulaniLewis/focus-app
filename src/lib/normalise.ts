@@ -12,6 +12,8 @@ export type ParsedItem = {
   day?: string;
   /** A real deadline. */
   dueAt?: string;
+  /** A real deadline with only a date. */
+  dueDay?: string;
   repeatDays?: number[];
   place?: string;
   estimateMin?: number;
@@ -69,6 +71,7 @@ export function normalise(input: any, settings: Settings, spaces: Space[]): Pars
       at: kind === 'event' ? at : undefined,
       day: kind === 'task' && typeof raw.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : undefined,
       dueAt: kind === 'task' && typeof raw.due === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw.due) ? raw.due.slice(0, 16) : undefined,
+      dueDay: kind === 'task' && typeof raw.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.due) ? raw.due : undefined,
       repeatDays:
         kind === 'event' && Array.isArray(raw.repeat_days)
           ? [...new Set<number>(raw.repeat_days.filter((d: any) => Number.isInteger(d) && d >= 0 && d <= 6))].sort()

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -15,6 +15,7 @@ import { useStore } from '../../lib/store';
 import { font, radius, space, useColors } from '../../theme';
 import { dayKey, fmtTime, parseLocal } from '../../lib/time';
 import { DAY_SHORT } from '../../lib/views';
+import { noteContext } from '../../lib/screens';
 
 function describeWhen(at?: string, repeatDays?: number[]) {
   if (!at) return undefined;
@@ -30,7 +31,10 @@ function describeWhen(at?: string, repeatDays?: number[]) {
 const BARS = 24;
 
 export default function Dump() {
-  const { user, state, addItems, addNotes, markJobs, batch } = useStore();
+  const { user, state, addItems, addNotes, markJobs, batch, logEvent } = useStore();
+  // "Note for Claude" from the dev report: saved as said, with the screen she came from. No Claude call.
+  const params = useLocalSearchParams<{ mode?: string; from?: string }>();
+  const noteMode = params.mode === 'note';
   const c = useColors();
   const [text, setText] = useState('');
   const [interim, setInterim] = useState('');
@@ -166,6 +170,18 @@ export default function Dump() {
 
   const save = () => {
     if (!result) return;
+    const kept0 = items.filter((i) => i.keep);
+    const titleOf = (id: string) => state.tasks.find((t) => t.id === id);
+    const asLogged = (ids: string[]) => ids.map(titleOf).filter((t): t is NonNullable<typeof t> => !!t).map((t) => ({ id: t.id, title: t.title, spaceId: t.spaceId }));
+    logEvent({
+      at: new Date().toISOString(),
+      kind: 'dictation',
+      said: turns.map((t) => t.said).join(' / '),
+      made: kept0.map((i) => ({ id: '', title: i.title, spaceId: i.kind === 'note' ? 'me' : i.spaceId })),
+      ticked: asLogged(jobMarks.filter((j) => j.mark === 'done').map((j) => j.id)),
+      started: asLogged(jobMarks.filter((j) => j.mark === 'started').map((j) => j.id)),
+      ...(turns.find((t) => t.q) ? { question: turns.filter((t) => t.q).map((t) => t.q).join(' / ') } : {}),
+    });
     batch('Saved', () => {
       markJobs(dayKey(new Date()), jobMarks.filter((j) => j.mark === 'done').map((j) => j.id), jobMarks.filter((j) => j.mark === 'started').map((j) => j.id));
       const kept = items.filter((i) => i.keep).map(({ keep, ...rest }) => rest);
@@ -280,9 +296,21 @@ export default function Dump() {
 
   const shown = interim ? join(text, interim) : text;
 
+  const saveNote = () => {
+    const from = params.from || 'Dev report';
+    logEvent({ at: new Date().toISOString(), kind: 'note', text: text.trim(), screen: from, context: noteContext(state, new Date(), isTabletDevice() ? 'tablet' : 'phone') });
+    setText('');
+    router.back();
+  };
+
   return (
     <Screen>
-      {question ? (
+      {noteMode ? (
+        <>
+          <T v="title">Note for Claude</T>
+          <T v="body" muted>{`Saves what you say, plus the screen you're on (${params.from || 'Dev report'}). It goes in the dev report, not your lists.`}</T>
+        </>
+      ) : question ? (
         <>
           <T v="label" muted>QUICK QUESTION</T>
           <T v="title">{question}</T>
@@ -354,10 +382,10 @@ export default function Dump() {
       ) : (
         !listening && (
           <View style={{ gap: space[2] }}>
-            <Button label={question ? 'Answer' : 'Sort it'} onPress={sort} disabled={!text.trim()} />
+            {noteMode ? <Button label="Save note" onPress={saveNote} disabled={!text.trim()} /> : <Button label={question ? 'Answer' : 'Sort it'} onPress={sort} disabled={!text.trim()} />}
             {question && waiting ? <Button kind="quiet" label="Skip the question" onPress={() => show(waiting)} /> : null}
             {question ? <Button kind="quiet" label="Start again" onPress={reset} /> : null}
-            {text && !question ? <Button kind="quiet" label="Clear" onPress={() => setText('')} /> : null}
+            {text && !question && !noteMode ? <Button kind="quiet" label="Clear" onPress={() => setText('')} /> : null}
           </View>
         )
       )}

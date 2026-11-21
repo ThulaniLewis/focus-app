@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tablet room mode and Hey Focus</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&amp;family=Lexend:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#9C4F67}a:hover{color:#6E2F45}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FBF3F4; color: #3A2A2F; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; display: flex; position: relative; overflow: hidden">
+<main style="flex: 1; padding: 32px 32px 104px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px">
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div>
+<p style="margin: 0; font-size: 20px; color: #6E5A60">Kitchen, started 19:42</p>
+<h1 style="margin: 4px 0 0; font-family: Lexend, system-ui, sans-serif; font-size: 44px; line-height: 48px; font-weight: 600">Kitchen reset</h1>
+</div>
+<button style="height: 72px; padding: 0 28px; border-radius: 18px; border: 1px solid #6E5A60; background: transparent; font: inherit; font-size: 20px; color: #3A2A2F">Stop the room</button>
+</div>
+<div style="background: #9C4F67; color: #FFFFFF; border-radius: 24px; padding: 28px">
+<p style="margin: 0; font-size: 18px; font-weight: 600">Now</p>
+<p style="margin: 6px 0 0; font-family: Lexend, system-ui, sans-serif; font-size: 34px; line-height: 40px; font-weight: 600">Load the dishwasher</p>
+<p style="margin: 6px 0 0; font-size: 22px">About 10 minutes</p>
+</div>
+<div style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 24px; padding: 20px 24px; font-size: 22px; line-height: 44px">
+<p style="margin: 0; font-size: 16px; font-weight: 600; color: #6E5A60">Then</p>
+<p style="margin: 0">Wipe the sides</p>
+<p style="margin: 0">Bins out</p>
+</div>
+<div style="display: flex; gap: 16px">
+<button style="flex: 1; height: 72px; border-radius: 18px; border: none; background: #FCE6D8; color: #6B3A1E; font: inherit; font-size: 20px">Lost momentum</button>
+<button style="flex: 1; height: 72px; border-radius: 18px; border: none; background: #FCE6D8; color: #6B3A1E; font: inherit; font-size: 20px">I'm avoiding this</button>
+</div>
+</section>
+<section style="background: #3A2A2F; color: #F1E7E9; border-radius: 24px; padding: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center">
+<div style="width: 120px; height: 120px; border-radius: 999px; background: #9C4F67; display: flex; align-items: center; justify-content: center"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></div>
+<p style="margin: 0; font-size: 20px; color: #BBA8AE">Listening</p>
+<p style="margin: 0; font-family: Lexend, system-ui, sans-serif; font-size: 28px; line-height: 36px; font-weight: 600">"Hey Focus, I'm done with the dishwasher"</p>
+<p style="margin: 0; font-size: 20px; color: #E3A9BA">Ticked. Next: wipe the sides</p>
+<p style="margin: 12px 0 0; font-size: 16px; color: #BBA8AE">Shared things only on this screen</p>
+</section>
+</main>
+<div style="position: absolute; left: 0; top: 728px; width: 1280px; height: 72px; background: repeating-linear-gradient(45deg, #F3E6E9 0 10px, #EBD9DD 10px 20px); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #6E5A60">Samsung taskbar area: kept clear</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

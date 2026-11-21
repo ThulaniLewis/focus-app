@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Money check-up</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&amp;family=Lexend:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#9C4F67}a:hover{color:#6E2F45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FBF3F4; color: #3A2A2F; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 16px; line-height: 24px; display: flex; flex-direction: column; overflow: hidden">
+<header style="padding: 28px 20px 8px; display: flex; justify-content: space-between; align-items: flex-end">
+<h1 style="margin: 0; font-family: Lexend, system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 600">Money check-up</h1>
+<span style="background: #3A2A2F; color: #FFFFFF; border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 600">Phone only</span>
+</header>
+<main style="padding: 8px 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<p style="margin: 0; color: #6E5A60">From the statements you shared. The files have been deleted; only this summary is kept.</p>
+<section style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+<div style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 12px 14px"><p style="margin: 0; font-size: 13px; color: #6E5A60">In each month</p><p style="margin: 2px 0 0; font-family: Lexend, system-ui, sans-serif; font-size: 22px; font-weight: 600">£[in]</p></div>
+<div style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 12px 14px"><p style="margin: 0; font-size: 13px; color: #6E5A60">Out each month</p><p style="margin: 2px 0 0; font-family: Lexend, system-ui, sans-serif; font-size: 22px; font-weight: 600">£[out]</p></div>
+</section>
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 4px 16px">
+<div style="display: flex; justify-content: space-between; min-height: 46px; align-items: center; border-bottom: 1px solid #EBD9DD"><span>Bills</span><span style="color: #6E5A60">£[x]</span></div>
+<div style="display: flex; justify-content: space-between; min-height: 46px; align-items: center; border-bottom: 1px solid #EBD9DD"><span>Subscriptions</span><span style="color: #6E5A60">£[x]</span></div>
+<div style="display: flex; justify-content: space-between; min-height: 46px; align-items: center"><span>Food and everyday</span><span style="color: #6E5A60">£[x]</span></div>
+</section>
+<section style="background: #FCE6D8; color: #6B3A1E; border-radius: 18px; padding: 14px 16px">
+<p style="margin: 0">Any cards, loans or overdrafts? Roughly what's owed, and the rate if you know it.</p>
+<button style="margin-top: 10px; height: 44px; padding: 0 16px; border-radius: 12px; border: none; background: #6B3A1E; color: #FFFFFF; font: inherit">Tell Focus</button>
+</section>
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 14px 16px">
+<p style="margin: 0; font-weight: 600">What's your goal?</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px">
+<button style="height: 40px; padding: 0 14px; border-radius: 999px; border: none; background: #F4DDE3; color: #6E2F45; font: inherit">Clear a card</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 999px; border: none; background: #F4DDE3; color: #6E2F45; font: inherit">Build a buffer</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 999px; border: none; background: #F4DDE3; color: #6E2F45; font: inherit">Save for the house</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 999px; border: none; background: #F4DDE3; color: #6E2F45; font: inherit">Make the month last</button>
+</div>
+</section>
+<p style="margin: 0; font-size: 13px; color: #6E5A60">A friendly guide, not a financial adviser. For debt help: MoneyHelper or StepChange, both free.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

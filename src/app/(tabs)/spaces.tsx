@@ -1,4 +1,5 @@
-import { isTabletDevice } from '../../lib/device';
+import { isTabletDevice, useDashMode } from '../../lib/device';
+import { DashSpaces } from '../../components/DashSpace';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -19,6 +20,8 @@ const KIND_HINT: Record<Space['kind'], string> = {
 export default function Spaces() {
   const { state } = useStore();
   const [editing, setEditing] = useState(false);
+  const dash = useDashMode();
+  if (dash) return <DashSpaces />;
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

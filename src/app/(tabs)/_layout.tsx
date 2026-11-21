@@ -7,6 +7,9 @@ import { font, type, useColors } from '../../theme';
 import { useDashMode } from '../../lib/device';
 
 // Screens that live in the tabs but have no button. (href: null resets the tabs when you open them.)
+/** Screens with a Dash layout of their own, where the tablet's rail replaces the tab bar. */
+const DASH_ROUTES = new Set(['index', 'spaces', 'space/[id]']);
+
 const hidden = { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } };
 
 export default function TabsLayout() {
@@ -23,7 +26,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.inkMuted,
         tabBarStyle:
-          dash && route.name === 'index'
+          dash && DASH_ROUTES.has(route.name)
             ? { display: 'none' }
             : { backgroundColor: c.surfaceRaised, borderTopColor: c.line, height: 70 + insets.bottom, paddingBottom: insets.bottom + 6, paddingTop: 6 },
         tabBarLabelStyle: { fontFamily: font.bodyStrong, fontSize: type.caption.fontSize },
@@ -66,6 +69,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="space/[id]" options={hidden} />
       <Tabs.Screen name="room/[slug]" options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="easier" options={hidden} />
+      <Tabs.Screen name="devreport" options={hidden} />
+      <Tabs.Screen name="tablet-settings" options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="comeup"options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="kitchen"options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="bedtime" options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />

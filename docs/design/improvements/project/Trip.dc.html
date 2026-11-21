@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trip countdown and holiday mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&amp;family=Lexend:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#9C4F67}a:hover{color:#6E2F45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FBF3F4; color: #3A2A2F; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 16px; line-height: 24px; display: flex; flex-direction: column; overflow: hidden">
+<header style="padding: 28px 20px 8px">
+<p style="margin: 0; color: #6E5A60">From your booking email</p>
+<h1 style="margin: 4px 0 0; font-family: Lexend, system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 600">[Trip], in 5 days</h1>
+</header>
+<main style="padding: 8px 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 14px 16px">
+<p style="margin: 0 0 8px; font-weight: 600">Countdown</p>
+<div style="display: flex; gap: 12px; padding: 6px 0"><span style="width: 56px; color: #9C4F67; font-weight: 600">Today</span><span>Packing list. Kitten sitter</span></div>
+<div style="display: flex; gap: 12px; padding: 6px 0"><span style="width: 56px; color: #6E5A60">Wed</span><span>Laundry</span></div>
+<div style="display: flex; gap: 12px; padding: 6px 0"><span style="width: 56px; color: #6E5A60">Thu</span><span>Pack the bag. Passports and tickets</span></div>
+<div style="display: flex; gap: 12px; padding: 6px 0"><span style="width: 56px; color: #6E5A60">Fri</span><span style="font-weight: 600">Leave by 06:40 for the 09:05 flight</span></div>
+</section>
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 18px; padding: 4px 16px">
+<p style="margin: 10px 0 2px; font-size: 13px; font-weight: 600; color: #6E5A60">What to pack. 4 nights, 18° and sunny</p>
+<label style="display: flex; align-items: center; gap: 12px; min-height: 46px; border-bottom: 1px solid #EBD9DD"><input type="checkbox" checked style="width: 22px; height: 22px; accent-color: #9C4F67">Sav's suncream and hat</label>
+<label style="display: flex; align-items: center; gap: 12px; min-height: 46px; border-bottom: 1px solid #EBD9DD"><input type="checkbox" style="width: 22px; height: 22px; accent-color: #9C4F67">Calpol and plasters</label>
+<label style="display: flex; align-items: center; gap: 12px; min-height: 46px"><input type="checkbox" style="width: 22px; height: 22px; accent-color: #9C4F67">Sav's favourite toy</label>
+</section>
+<section style="background: #F4DDE3; color: #6E2F45; border-radius: 18px; padding: 14px 16px">
+<p style="margin: 0; font-weight: 600">Holiday mode from Friday</p>
+<p style="margin: 2px 0 12px">House jobs and routines pause. Nothing counts as missed. Back home Tuesday with a light day.</p>
+<div style="display: flex; gap: 8px">
+<button style="flex: 1; height: 44px; border-radius: 12px; border: none; background: #9C4F67; color: #FFFFFF; font: inherit">Holiday</button>
+<button style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid #6E2F45; background: transparent; color: #6E2F45; font: inherit">Work trip</button>
+</div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

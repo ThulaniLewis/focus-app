@@ -5,9 +5,12 @@ import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react
 import { Icon } from '../../../components/Icon';
 import { TaskRow } from '../../../components/TaskRow';
 import { Card, Check, Chip, Header, IconButton, Screen, Section, T } from '../../../components/ui';
-import { useStore } from '../../../lib/store';
+import { useNow, useStore } from '../../../lib/store';
+import { spaceView } from '../../../lib/spaceView';
+import { useDashMode } from '../../../lib/device';
+import { DashSpace } from '../../../components/DashSpace';
 import { font, radius, space, type, useColors } from '../../../theme';
-import { dayKey, fmtTime, parseLocal, slug } from '../../../lib/time';
+import { dayKey, fmtTime, slug } from '../../../lib/time';
 import { FOOD_GROUPS, type Space, type Task } from '../../../lib/types';
 import { openInRoom, roomsByFloor } from '../../../lib/views';
 
@@ -15,6 +18,8 @@ export default function SpaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state } = useStore();
   const sp = state.spaces.find((s) => s.id === id);
+  const dash = useDashMode();
+  if (sp && dash) return <DashSpace sp={sp} />;
   if (!sp) {
     return (
       <Screen>
@@ -67,40 +72,51 @@ function TaskList({ tasks, empty, showRoom = true }: { tasks: Task[]; empty: str
   );
 }
 
+/** Built to "Job search: ordered list and deadlines": real dates only at the top, then the next list. */
 function GeneralSpace({ sp }: { sp: Space }) {
   const { state, addItems } = useStore();
-  const mine = state.tasks.filter((t) => t.spaceId === sp.id);
-  const open = mine.filter((t) => !t.done && !t.at);
-  const upcoming = mine
-    .filter((t) => t.at && !t.done && (t.repeatDays?.length || (parseLocal(t.at)?.getTime() ?? 0) >= Date.now() - 3600000))
-    .sort((a, b) => (a.at ?? '').localeCompare(b.at ?? ''));
-  const done = mine.filter((t) => t.done && !t.at).slice(-8).reverse();
+  const c = useColors();
+  const now = useNow(60000);
+  const v = spaceView(state.tasks.filter((t) => t.spaceId === sp.id), now);
+  const hasDates = v.deadlines.length + v.dated.length + v.weekly.length > 0;
   return (
     <>
+      {hasDates ? <T v="label" muted>Real dates only</T> : null}
+      {v.deadlines.map(({ task, label, reminders }) => (
+        <Card key={task.id} tone="primary" style={{ borderRadius: radius.lg }}>
+          <T v="label" color={c.onPrimary}>{label}</T>
+          <T v="heading" color={c.onPrimary}>{task.title}</T>
+          <T v="body" color={c.onPrimary}>{reminders}</T>
+        </Card>
+      ))}
+      {v.dated.map(({ task, label }) => (
+        <Card key={task.id} style={{ gap: space[1] }}>
+          <T v="label" muted>{label}</T>
+          <T v="bodyStrong">{task.title}</T>
+          {task.place ? <T v="body" muted>{task.place}</T> : null}
+        </Card>
+      ))}
+      {v.weekly.length > 0 && (
+        <Card style={{ paddingVertical: space[1] }}>
+          {v.weekly.map(({ task, label }, i) => (
+            <View key={task.id} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space[3], minHeight: 48, alignItems: 'center', borderTopWidth: i ? StyleSheet.hairlineWidth : 0, borderTopColor: c.line }}>
+              <T v="body" style={{ flex: 1 }}>{task.title}</T>
+              <T v="body" muted>{label}</T>
+            </View>
+          ))}
+        </Card>
+      )}
+      <T v="label" muted style={hasDates ? { marginTop: space[2] } : undefined}>Next, in order. Never late</T>
+      <TaskList tasks={v.next} empty="Nothing open here. Dump something and Focus will put it in the right place." />
       <QuickAdd placeholder={`Add to ${sp.name}`} onAdd={(title) => addItems([{ title, kind: 'task', spaceId: sp.id }])} />
-      {upcoming.length > 0 && (
-        <Section title="Coming up">
-          <Card>
-            {upcoming.map((t) => {
-              const d = parseLocal(t.at!);
-              return (
-                <View key={t.id} style={{ flexDirection: 'row', gap: space[3] }}>
-                  <T v="bodyStrong" style={{ width: 92 }}>
-                    {t.repeatDays?.length ? `Repeats ${d ? fmtTime(d) : ''}` : d ? `${d.getDate()}/${d.getMonth() + 1} ${fmtTime(d)}` : ''}
-                  </T>
-                  <T v="body" style={{ flex: 1 }}>{t.title}</T>
-                </View>
-              );
-            })}
-          </Card>
+      {v.someday.length > 0 && (
+        <Section title="Someday">
+          <TaskList tasks={v.someday} empty="" />
         </Section>
       )}
-      <Section title="To do" hint={open.length ? `${open.length} open` : undefined}>
-        <TaskList tasks={open} empty="Nothing open here. Dump something and Focus will put it in the right place." />
-      </Section>
-      {done.length > 0 && (
+      {v.doneLately.length > 0 && (
         <Section title="Done lately">
-          <TaskList tasks={done} empty="" />
+          <TaskList tasks={v.doneLately} empty="" />
         </Section>
       )}
     </>

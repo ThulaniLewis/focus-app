@@ -4,7 +4,10 @@
 import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { featureOn } from '../lib/features';
+import { useWeather, WeatherCard } from './WeatherCard';
 import { useNow, useStore } from '../lib/store';
 import { isPrivateSpace } from '../lib/sync';
 import { font, withAlpha } from '../theme';
@@ -13,7 +16,6 @@ import type { State } from '../lib/types';
 import { topPicks } from './Focus';
 import { Icon } from './Icon';
 import { openRoundStop, openStopFlow } from './Session';
-import { showSheet } from './Sheet';
 import { timerLeft, useTimers } from '../lib/timers';
 import { avoidFirst } from '../lib/roomMode';
 import { savHomeOn, waitingFor, waitPicks } from '../lib/comeUp';
@@ -108,49 +110,48 @@ function RailButton({ icon, label, active, onPress }: { icon: string; label: str
   );
 }
 
-/** Other apps from the Dash, for when Focus is the tablet's home screen. */
-export function openAppsSheet() {
-  const go = (url: string) => () => Linking.openURL(url).catch(() => {});
-  showSheet({
-    title: 'Open another app',
-    message: "The taskbar at the bottom of the screen has all your apps too. Drag one up beside Focus for split screen.",
-    options: [
-      { label: 'YouTube', icon: 'youtube', onPress: go('https://www.youtube.com') },
-      { label: 'Spotify', icon: 'music', onPress: go('spotify:') },
-      { label: 'Browser', icon: 'globe', onPress: go('https://www.google.com') },
-      { label: 'Tablet settings', icon: 'settings', onPress: () => Linking.sendIntent('android.settings.SETTINGS').catch(() => {}) },
-      { label: 'Change the home screen', icon: 'home', onPress: () => Linking.sendIntent('android.settings.HOME_SETTINGS').catch(() => {}) },
-    ],
-  });
+export type DashTab = 'today' | 'spaces' | 'home' | 'shop' | 'kitchen' | 'sav' | 'room' | 'settings';
+
+/** Samsung's taskbar along the bottom ("Tablet Dash, fixed": kept clear, 72 high). Android reports it as an inset when it's pinned. */
+const TASKBAR_CLEAR = 72;
+const MIC = 80;
+
+/** How much of the bottom of the screen the Dash keeps clear for the taskbar. */
+export function useBottomClear() {
+  const insets = useSafeAreaInsets();
+  return Math.max(insets.bottom, TASKBAR_CLEAR);
 }
 
-export type DashTab = 'today' | 'kitchen' | 'sav' | 'room';
-
-/** The tablet's frame: a rail of big buttons down the left, the screen on the right. */
+/** The tablet's frame: a rail of big buttons down the left, the screen on the right, the mic floating above the taskbar. */
 export function DashShell({ active, children }: { active: DashTab; children: React.ReactNode }) {
   const D = useDash();
   const { state } = useStore();
+  const clear = useBottomClear();
   const shopping = state.spaces.find((s) => s.kind === 'shopping');
+  const home = state.spaces.find((s) => s.kind === 'home');
   return (
     <View style={{ flex: 1, backgroundColor: D.bg, flexDirection: 'row' }}>
-      <View style={{ width: 124, backgroundColor: D.rail, borderRightWidth: 1, borderRightColor: D.line, alignItems: 'center', gap: 8, paddingVertical: 20 }}>
+      <View style={{ width: 124, backgroundColor: D.rail, borderRightWidth: 1, borderRightColor: D.line, alignItems: 'center', gap: 8, paddingTop: 20, paddingBottom: clear + 12 }}>
         <RailButton icon="sun" label="Today" active={active === 'today'} onPress={() => router.navigate('/')} />
-        <RailButton icon="home" label="Home" onPress={() => router.navigate('/space/home')} />
-        <RailButton icon="shopping-cart" label="Shop" onPress={() => shopping && router.navigate(`/space/${shopping.id}`)} />
+        <RailButton icon="grid" label="Spaces" active={active === 'spaces'} onPress={() => router.navigate('/spaces')} />
+        <RailButton icon="home" label="Home" active={active === 'home'} onPress={() => home && router.navigate(`/space/${home.id}`)} />
+        <RailButton icon="shopping-cart" label="Shop" active={active === 'shop'} onPress={() => shopping && router.navigate(`/space/${shopping.id}`)} />
         <RailButton icon="clock" label="Kitchen" active={active === 'kitchen'} onPress={() => router.navigate('/kitchen')} />
         <RailButton icon="star" label="Sav" active={active === 'sav'} onPress={() => router.navigate('/bedtime')} />
-        <RailButton icon="grid" label="Apps" onPress={openAppsSheet} />
         <View style={{ flex: 1 }} />
+        <RailButton icon="settings" label="Settings" active={active === 'settings'} onPress={() => router.navigate('/tablet-settings')} />
+      </View>
+      <View style={{ flex: 1, paddingBottom: clear }}>
+        {children}
         <Pressable
           onPress={() => router.navigate('/dump')}
           accessibilityRole="button"
           accessibilityLabel="Talk to Focus"
-          style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: D.primary, alignItems: 'center', justifyContent: 'center' }}
+          style={{ position: 'absolute', bottom: clear + 8, alignSelf: 'center', width: MIC, height: MIC, borderRadius: MIC / 2, backgroundColor: D.primary, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Icon name="mic" size={40} color={D.onPrimary} />
+          <Icon name="mic" size={34} color={D.onPrimary} />
         </Pressable>
       </View>
-      <View style={{ flex: 1 }}>{children}</View>
     </View>
   );
 }
@@ -193,6 +194,7 @@ export function TabletDash() {
   const now = useNow(1000);
   const [wokeAt, setWokeAt] = useState<number | null>(null);
   const [showPick, setShowPick] = useState(false);
+  const weather = useWeather(state.settings.weatherPlace, featureOn(state.settings, 'weather'));
   const day = dayKey(now);
   const m = dashModel(state, now);
   const roomName = (s?: string) => roomNameOf(state.settings.rooms, s);
@@ -240,6 +242,11 @@ export function TabletDash() {
             <L size={112} display style={{ lineHeight: 112, letterSpacing: -1 }}>{fmtTime(now)}</L>
             <L size={24} color={D.muted}>{`${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`}</L>
           </View>
+          {weather ? (
+            <View style={{ flex: 1, marginHorizontal: 24, alignSelf: 'center' }}>
+              <WeatherCard weather={weather} leaveAt={m.leave?.leaveAt} />
+            </View>
+          ) : null}
           <View style={{ alignItems: 'flex-end', gap: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Pressable

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Icon } from '../../components/Icon';
@@ -6,6 +7,7 @@ import { Button, Card, Header, Screen, Section, T } from '../../components/ui';
 import { calendarAllowed, writeCalendarName } from '../../lib/calendar';
 import { FEATURES, featureOn, switchFeature } from '../../lib/features';
 import { LOOKS } from '../../lib/look';
+import { geocodeUrl, parsePlace } from '../../lib/weather';
 import type { Floor, Room } from '../../lib/types';
 import { useStore } from '../../lib/store';
 import { font, radius, space, useColors } from '../../theme';
@@ -172,6 +174,10 @@ export default function Settings() {
         </Card>
       </Section>
 
+      <Section title="Weather" hint="for the tablet's Dash">
+        <WeatherTown />
+      </Section>
+
       <Section title="Rooms" hint="tap the floor to change it">
         <Card>
           {s.rooms.map((r, i) => (
@@ -222,6 +228,10 @@ export default function Settings() {
         </Card>
       </Section>
 
+      <Section title="Dev report">
+        <Button kind="soft" label="Open the dev report" onPress={() => router.navigate('/devreport')} />
+      </Section>
+
       <Section title="Focus notes" hint={`${state.notes.length}`}>
         {state.notes.length ? (
           <Card>
@@ -263,6 +273,36 @@ export default function Settings() {
         <NfcAddresses rooms={s.rooms} />
       </Section>
     </Screen>
+  );
+}
+
+/** The town for the Dash's weather. Only the town goes to Open-Meteo, as a rough position. */
+export function WeatherTown() {
+  const { state, updateSettings } = useStore();
+  const place = state.settings.weatherPlace;
+  const [town, setTown] = useState(place?.name ?? '');
+  const [msg, setMsg] = useState<string | null>(null);
+  const find = async () => {
+    setMsg(null);
+    try {
+      const r = await fetch(geocodeUrl(town));
+      const p = r.ok ? parsePlace(await r.json(), town) : null;
+      if (!p) return setMsg(`Couldn't find "${town.trim()}". Try the nearest big town.`);
+      updateSettings({ weatherPlace: p });
+      setMsg(`Weather for ${p.name}.`);
+    } catch {
+      setMsg("Couldn't reach the weather service. Check you're online.");
+    }
+  };
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', gap: space[2], alignItems: 'center' }}>
+        <Field value={town} onChangeText={setTown} placeholder="Your town" style={{ flex: 1 }} onSubmitEditing={find} />
+        <Button small label="Find" disabled={!town.trim()} onPress={find} />
+      </View>
+      <T v="caption" muted>{msg ?? (place ? `Showing weather for ${place.name}. Only the town is sent, never where you are.` : 'Type your town. Only the town is sent to Open-Meteo, never where you are.')}</T>
+      {place ? <Button small kind="quiet" label="Stop showing weather" onPress={() => { updateSettings({ weatherPlace: null }); setTown(''); setMsg(null); }} style={{ alignSelf: 'flex-start' }} /> : null}
+    </Card>
   );
 }
 

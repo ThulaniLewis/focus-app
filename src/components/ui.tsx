@@ -118,14 +118,14 @@ export function Button({
 }: {
   label: string;
   onPress: () => void;
-  kind?: 'primary' | 'soft' | 'quiet' | 'caution';
+  kind?: 'primary' | 'soft' | 'quiet' | 'caution' | 'outline';
   disabled?: boolean;
   small?: boolean;
   style?: ViewStyle;
 }) {
   const c = useColors();
-  const bg = { primary: c.primary, soft: c.primarySoft, quiet: 'transparent', caution: c.cautionSoft }[kind];
-  const fg = { primary: c.onPrimary, soft: c.primaryStrong, quiet: c.primary, caution: c.cautionInk }[kind];
+  const bg = { primary: c.primary, soft: c.primarySoft, quiet: 'transparent', caution: c.cautionSoft, outline: 'transparent' }[kind];
+  const fg = { primary: c.onPrimary, soft: c.primaryStrong, quiet: c.primary, caution: c.cautionInk, outline: c.ink }[kind];
   return (
     <Pressable
       accessibilityRole="button"
@@ -142,6 +142,7 @@ export function Button({
           justifyContent: 'center',
           opacity: disabled ? 0.45 : pressed ? 0.8 : 1,
         },
+        kind === 'outline' && { borderWidth: 1, borderColor: c.outline },
         style,
       ]}
     >

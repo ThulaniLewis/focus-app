@@ -223,7 +223,7 @@ const slotMin = (t: Task) => (t.at ? Number(t.at.slice(11, 13)) * 60 + Number(t.
 export function tasksFor(state: State, day: string): Task[] {
   const { paused, focus } = dayPlanFor(state.settings, day);
   const away = savAwayByPattern(state.settings, day);
-  const dueSoon = (t: Task) => (t.dueAt && t.dueAt.slice(0, 10) <= day ? 0 : 1);
+  const dueSoon = (t: Task) => ((t.dueAt && t.dueAt.slice(0, 10) <= day) || (t.dueDay && t.dueDay <= day) ? 0 : 1);
   const rank = (t: Task) => (t.priority ?? 2) * 10 + (focus && t.spaceId === focus ? 0 : 5);
   return state.tasks.filter((t) => {
     if (t.someday) return false; // projects live in their space

@@ -6,6 +6,7 @@ import { useNow, useStore } from '../lib/store';
 import { space, useColors } from '../theme';
 import { dayKey, elapsedSec, estimateRatio, fmtElapsed, fmtTime, isDoneOn, parseLocal, realisticMin, slug } from '../lib/time';
 import type { Room, Space, Task } from '../lib/types';
+import { fmtDueDay } from '../lib/nudges';
 import { Check, Chip, Flash, IconButton, T } from './ui';
 
 export function roomName(rooms: Room[], slugValue?: string) {
@@ -47,7 +48,9 @@ export function TaskRow({ task, showRoom = true, showSpace = false, last = false
   const due = task.dueAt ? parseLocal(task.dueAt) : null;
   const dueLabel = due
     ? `${dayKey(due) === dayKey(now) ? 'Due' : `Due ${due.toLocaleDateString('en-GB', { weekday: 'short' })}`} ${fmtTime(due)}`
-    : null;
+    : task.dueDay
+      ? `Due ${fmtDueDay(task.dueDay)}`
+      : null;
 
   const openMenu = () =>
     showSheet({

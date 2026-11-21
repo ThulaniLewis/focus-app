@@ -30,5 +30,6 @@ export function migrate(saved: any): State {
     // Phone-only extras (never synced): keep them through a reload.
     ...(s.sleep && Array.isArray(s.sleep.nights) ? { sleep: s.sleep } : {}),
     ...(s.sleepReading === 'yes' || s.sleepReading === 'no' ? { sleepReading: s.sleepReading } : {}),
+    ...(Array.isArray(s.devLog) ? { devLog: s.devLog } : {}),
   };
 }

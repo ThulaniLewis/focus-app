@@ -7,7 +7,8 @@ import {
   AtkinsonHyperlegibleNext_600SemiBold,
 } from '@expo-google-fonts/atkinson-hyperlegible-next';
 import { useFonts } from 'expo-font';
-import { router, Stack } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
+import { recordScreen } from '../lib/screens';
 import * as Linking from 'expo-linking';
 import { roomFromLink } from '../lib/roomLink';
 import * as Notifications from 'expo-notifications';
@@ -67,10 +68,18 @@ function Gate() {
       <SheetHost />
       <SessionHost />
       {featureOn(state.settings, 'punctuality') && <PunctualityHost />}
+      <ScreenTracker />
       <RoomLinks />
       <NotificationLinks />
     </>
   );
+}
+
+/** Remembers the last few screens, so a Note for Claude can say where it was made. */
+function ScreenTracker() {
+  const path = usePathname();
+  useEffect(() => recordScreen(path), [path]);
+  return null;
 }
 
 /**

@@ -23,6 +23,8 @@ export type Task = {
   after?: string;
   /** A real deadline, local "YYYY-MM-DDTHH:MM". Focus counts back from it with loud alerts. */
   dueAt?: string;
+  /** A real deadline with a date but no time ("Due 23 Nov"), "YYYY-MM-DD". Counts down at 3 days, 1 day and the morning of. */
+  dueDay?: string;
   /** Weekdays it repeats on, 0 = Sunday. Uses the time part of `at`. */
   repeatDays?: number[];
   /** Where it happens, matched against Places for travel time. */
@@ -143,6 +145,8 @@ export type Settings = {
   features?: Partial<Record<import('./features').FeatureId, boolean>>;
   /** On this device: Light, Dark, or Match phone (light by day, dark from wind down). Missing means Match phone. */
   look?: import('./look').Look;
+  /** The town the Dash shows weather for (rounded to about 10 km). Shared, so the tablet gets it. */
+  weatherPlace?: import('./weather').WeatherPlace | null;
 };
 
 /** One answer to "how did it go?". lateMin 0 is on time; otherwise roughly 5, 10, 20 or 30 (30 or more). */
@@ -161,6 +165,8 @@ export type State = {
   sleep?: { nights: { day: string; asleepMin: number; start: string; end: string }[]; notToday?: string };
   /** On this phone: whether to read sleep from Health Connect ("yes" after Allow, "no" after Not now). */
   sleepReading?: 'yes' | 'no';
+  /** The dev report's log: on this device only, never synced. See lib/devlog.ts. */
+  devLog?: import('./devlog').DevEvent[];
 };
 
 export const DEFAULT_SPACES: Space[] = [

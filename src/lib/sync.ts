@@ -29,6 +29,7 @@ export const SHARED_SETTINGS = [
   'savNap',
   'nurseryWindow',
   'punctualityLog',
+  'weatherPlace',
 ] as const satisfies readonly (keyof Settings)[];
 
 /** The same data always gives the same fingerprint, whatever order its keys were written in. */

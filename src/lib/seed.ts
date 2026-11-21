@@ -2,9 +2,12 @@
 // Added once (by `seed` id), then it's all hers to change or delete.
 import type { State, Task } from './types';
 
-export const SETUP_VERSION = 9;
+export const SETUP_VERSION = 10;
 
 const WEEKDAYS = [1, 2, 3, 4, 5];
+
+/** 24-hour, and short enough not to be cut off on the Dash. */
+const PICKUP_TITLE = 'Pick Sav up, latest 17:45';
 const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
 
 type Starter = Omit<Task, 'id' | 'createdAt' | 'done' | 'kind' | 'at'> & { time: string; repeatDays: number[] };
@@ -12,7 +15,7 @@ type Starter = Omit<Task, 'id' | 'createdAt' | 'done' | 'kind' | 'at'> & { time:
 export const STARTERS: Starter[] = [
   // Sav
   { seed: 'nursery-drop', title: 'Drop Sav at nursery', time: '08:00', repeatDays: WEEKDAYS, place: 'Nursery', spaceId: 'sav' },
-  { seed: 'nursery-pickup', title: 'Pick Sav up (latest 5:45)', time: '17:45', repeatDays: WEEKDAYS, place: 'Nursery', spaceId: 'sav' },
+  { seed: 'nursery-pickup', title: PICKUP_TITLE, time: '17:45', repeatDays: WEEKDAYS, place: 'Nursery', spaceId: 'sav' },
   { seed: 'sav-dinner', title: "Sav's dinner", time: '18:00', repeatDays: EVERY_DAY, spaceId: 'sav', onlyWhen: 'sav-home', room: 'kitchen' },
   { seed: 'sav-bed', title: "Sav's bedtime", time: '19:30', repeatDays: EVERY_DAY, spaceId: 'sav', onlyWhen: 'sav-home', room: 'savannah-bedroom' },
   // Job search
@@ -103,6 +106,8 @@ export const PROJECTS = [
 // ---- v5: job search deadlines from the tracker, 18 Nov 2026 ----
 // The house still comes first on Thursday morning; the deadlines fit around it.
 
+const NHSE_TITLE = 'NHS England Cyber Ops statement: lead on GCU governance, reporting and moving work into BAU';
+
 type JobItem = { seed: string; title: string; when?: string; day?: string; estimateMin?: number; priority: 1 | 2 | 3; place?: string };
 
 export const JOB_DEADLINES: JobItem[] = [
@@ -116,7 +121,7 @@ export const JOB_DEADLINES: JobItem[] = [
   { seed: 'job-zak', when: '2026-11-20T13:25', estimateMin: 5, priority: 2, title: 'Chase Zak Harvey (Lawrence Harvey) for a call if he has not replied' },
   { seed: 'job-nhsbt', when: '2026-11-20T13:30', estimateMin: 10, priority: 2, title: 'NHSBT Head of CDIO Office: decide yes or no (£49k to £57k is below your £75k)' },
   { seed: 'job-garfield', day: '2026-11-19', estimateMin: 30, priority: 2, title: 'Garfield Weston: read the candidate pack when it arrives, then plan the application' },
-  { seed: 'job-nhse', when: '2026-11-22T10:00', estimateMin: 90, priority: 2, title: 'NHS England Cyber Ops statement: lead on GCU governance, reporting and moving work into BAU. Closes 23 Nov' },
+  { seed: 'job-nhse', when: '2026-11-22T10:00', estimateMin: 90, priority: 2, title: NHSE_TITLE },
   { seed: 'job-culture-mile', when: '2026-11-24T09:00', estimateMin: 60, priority: 1, title: 'Culture Mile BID first round interview (time to confirm)' },
   { seed: 'job-stg-prep', day: '2026-11-27', estimateMin: 45, priority: 1, title: "St George's interview prep: check referee emails, reread your application form" },
   { seed: 'job-stg-childcare', day: '2026-11-23', estimateMin: 10, priority: 1, title: "Sort childcare for Mon 30 Nov morning (St George's interview 9:30)" },
@@ -331,7 +336,7 @@ function applyV7(state: State, now: Date, makeId: () => string): State {
   const have = new Set(state.tasks.map((t) => t.seed).filter(Boolean));
   const day = today(now);
   const tasks = state.tasks.map((t) =>
-    t.seed === 'nursery-pickup' && t.at ? { ...t, at: `${t.at.slice(0, 10)}T17:15`, title: 'Pick Sav up (latest 5:45)' } : t,
+    t.seed === 'nursery-pickup' && t.at ? { ...t, at: `${t.at.slice(0, 10)}T17:15`, title: PICKUP_TITLE } : t,
   );
   const added: Task[] = DINNER.filter((d) => !have.has(d.seed)).map(({ time, ...d }) => ({
     ...d,
@@ -393,6 +398,23 @@ function applyV9(state: State): State {
   return { ...state, tasks: state.tasks.map((t) => (t.flex && t.kind === 'event' ? { ...t, kind: 'task' as const } : t)) };
 }
 
+/**
+ * v10 (21 Nov): pick-up in 24-hour time, and NHS England is a real "Due 23 Nov" deadline that counts
+ * down (3 days, 1 day, the morning of) instead of sitting at a made-up time. Only touches titles she
+ * hasn't changed herself.
+ */
+function applyV10(state: State): State {
+  const tasks = state.tasks.map((t) => {
+    if (t.seed === 'nursery-pickup' && t.title === 'Pick Sav up (latest 5:45)') return { ...t, title: PICKUP_TITLE };
+    if (t.seed === 'job-nhse') {
+      const title = t.title === `${NHSE_TITLE}. Closes 23 Nov` ? NHSE_TITLE : t.title;
+      return { ...t, title, dueDay: t.dueDay ?? '2026-11-23' };
+    }
+    return t;
+  });
+  return { ...state, tasks };
+}
+
 /** Adds any setup not applied yet, in order. Pure. */
 export function applySetup(state: State, now: Date, makeId: () => string): State {
   const v = state.settings.setupVersion ?? 0;
@@ -405,5 +427,6 @@ export function applySetup(state: State, now: Date, makeId: () => string): State
   if (v < 7) next = applyV7(next, now, makeId);
   if (v < 8) next = applyV8(next);
   if (v < 9) next = applyV9(next);
+  if (v < 10) next = applyV10(next);
   return { ...next, settings: { ...next.settings, setupVersion: SETUP_VERSION } };
 }

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tonight's dinner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&amp;family=Lexend:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#9C4F67}a:hover{color:#6E2F45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FBF3F4; color: #3A2A2F; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 16px; line-height: 24px; display: flex; flex-direction: column; overflow: hidden">
+<header style="padding: 20px 20px 8px; display: flex; align-items: center; gap: 12px">
+<a href="#" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #3A2A2F"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg></a>
+<p style="margin: 0; color: #6E5A60">Cook dinner, before pick-up</p>
+</header>
+<main style="padding: 0 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 24px; padding: 20px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; color: #6E5A60">Tonight, for you and Sav</p>
+<h1 style="margin: 4px 0 0; font-family: Lexend, system-ui, sans-serif; font-size: 28px; line-height: 34px; font-weight: 600">Chicken and veg stir fry</h1>
+<div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap">
+<span style="background: #F4DDE3; color: #6E2F45; border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 600">About 25 minutes</span>
+<span style="background: #F4DDE3; color: #6E2F45; border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 600">Uses what's in</span>
+</div>
+<ol style="margin: 16px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px">
+<li>Put the rice on</li>
+<li>Slice the chicken and peppers</li>
+<li>Fry the chicken until golden, then the veg</li>
+<li>Add soy sauce. Cut Sav's into small pieces</li>
+</ol>
+</section>
+<section style="background: #FCE6D8; color: #6B3A1E; border-radius: 18px; padding: 14px 16px">
+<p style="margin: 0 0 10px">You're out of soy sauce. Add it to Shopping?</p>
+<button style="height: 44px; padding: 0 18px; border-radius: 12px; border: none; background: #6B3A1E; color: #FFFFFF; font: inherit">Add to Shopping</button>
+</section>
+<div style="display: flex; gap: 8px">
+<button style="flex: 1; height: 52px; border-radius: 12px; border: none; background: #9C4F67; color: #FFFFFF; font: inherit; font-weight: 600">Start cooking</button>
+<button style="flex: 1; height: 52px; border-radius: 12px; border: 1px solid #6E5A60; background: transparent; color: #3A2A2F; font: inherit">Something else</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button style="height: 52px; border-radius: 12px; border: 1px solid #EBD9DD; background: #FFFBFB; color: #3A2A2F; font: inherit; text-align: left; padding: 0 16px">Tell me what's in the fridge</button>
+<button style="height: 52px; border-radius: 12px; border: 1px solid #EBD9DD; background: #FFFBFB; color: #3A2A2F; font: inherit; text-align: left; padding: 0 16px">Shall we plan a food shop?</button>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

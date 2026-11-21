@@ -138,7 +138,7 @@ export function sickDayMoves(state: State, now: Date): Move[] {
     if (t.visitor || (t.kind === 'event' && t.place) || (t.spaceId === 'sav' && hasRealTime(t))) continue; // appointments and Sav's routine stay
     const repeats = !!t.repeatDays?.length;
     // A real deadline before the free day: it stays (moving it would miss the deadline).
-    const deadlineFirst = !!t.dueAt && t.dueAt.slice(0, 10) < free;
+    const deadlineFirst = (!!t.dueAt && t.dueAt.slice(0, 10) < free) || (!!t.dueDay && t.dueDay < free);
     const out = needsGoingOut(t);
     // Bigger one-off jobs move; everyday jobs (kitchen reset) don't, they fit round Sav instead.
     const big = !repeats && isBig(t) && t.kind !== 'event';

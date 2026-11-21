@@ -3,7 +3,6 @@ import * as SecureStore from 'expo-secure-store';
 import { AUTH_REDIRECT, configured, signInFromLink, supabase } from './supabase';
 import * as Linking from 'expo-linking';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { ParsedItem } from './claude';
 import { cancelRoundCheckIn, clearJob, scheduleRoundCheckIn, syncNotifications, tidyPresented } from './notify';
 import { CHECK_IN_MIN, checkInAt, checkInText } from './roomMode';
 import { applyComeUp as applyComeUpTo, type ComeUpPlan } from './comeUp';
@@ -17,6 +16,8 @@ import { addToCalendar } from './calendar';
 import { migrate } from './migrate';
 import { applySetup } from './seed';
 import { markWith } from './marks';
+import { appendLog, type DevEvent, touched } from './devlog';
+import { onClaudeUsage, type ParsedItem } from './claude';
 import * as Notifications from 'expo-notifications';
 import { type DayPlan, DEFAULT_SETTINGS, DEFAULT_SPACES, type Room, type Settings, type Space, type State, type Task } from './types';
 
@@ -39,6 +40,8 @@ type Ctx = {
   canUndo: string | null;
   undoRev: number;
   undo: () => void;
+  /** Adds to the dev report's log. Not undoable, never synced. */
+  logEvent: (ev: DevEvent) => void;
   addItems: (items: ParsedItem[]) => void;
   addNotes: (notes: string[]) => void;
   toggleDone: (taskId: string, day?: string) => void;
@@ -186,8 +189,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const batching = useRef<{ label: string; pushed: boolean } | null>(null);
   const change = useCallback((label: string, fn: (s: State) => State) => {
     const prev = latest.current;
-    const next = fn(prev);
-    if (next === prev) return;
+    const changed = fn(prev);
+    if (changed === prev) return;
+    // The dev report's activity log rides along, but undo never takes entries away (see undo).
+    const next = { ...changed, devLog: appendLog(changed.devLog, { at: nowISO(), kind: 'change', label, tasks: touched(prev.tasks, changed.tasks) }) };
     latest.current = next;
     const b = batching.current;
     if (!b || !b.pushed) {
@@ -200,7 +205,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /** A change from the other device: it can't be undone here, so earlier undo steps (from before it) go. */
-  const applyRemoteState = useCallback((next: State) => {
+  const applyRemoteState = useCallback((remote: State) => {
+    const next = { ...remote, devLog: latest.current.devLog };
     latest.current = next;
     history.current = [];
     setCanUndo(null);
@@ -221,10 +227,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const restored = cal.size
       ? { ...last.state, tasks: last.state.tasks.map((t) => (cal.has(t.id) && !t.calendarEventId ? { ...t, calendarEventId: cal.get(t.id) } : t)) }
       : last.state;
-    latest.current = restored;
-    setState(restored);
+    const kept = { ...restored, devLog: appendLog(latest.current.devLog, { at: nowISO(), kind: 'change', label: `Undid: ${last.label}` }) };
+    latest.current = kept;
+    setState(kept);
     setCanUndo(history.current.at(-1)?.label ?? null);
   }, []);
+
+  const logEvent = useCallback((ev: DevEvent) => {
+    const next = { ...latest.current, devLog: appendLog(latest.current.devLog, ev) };
+    latest.current = next;
+    setState(next);
+  }, []);
+
+  useEffect(() => {
+    onClaudeUsage((u) => logEvent({ at: nowISO(), kind: 'claude', ...u }));
+    return () => onClaudeUsage(null);
+  }, [logEvent]);
 
   const value = useMemo<Ctx>(
     () => ({
@@ -235,6 +253,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       canUndo,
       undoRev,
       undo,
+      logEvent,
       async sendCode(email) {
         if (!configured) return 'Add your Supabase details in src/config.ts first.';
         const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { emailRedirectTo: AUTH_REDIRECT, shouldCreateUser: false } });
@@ -265,6 +284,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               estimateMin: p.estimateMin,
               day: p.at ? undefined : (p.day ?? today), // a deadline shows from today until it's done
               dueAt: p.dueAt,
+              dueDay: p.dueDay,
               createdAt: nowISO(),
               done: false,
             }));
@@ -584,7 +604,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         change('Deleted note', (s) => ({ ...s, notes: s.notes.filter((n) => n.id !== noteId) }));
       },
     }),
-    [ready, state, user, linkError, canUndo, undoRev, undo, change],
+    [ready, state, user, linkError, canUndo, undoRev, undo, change, logEvent],
   );
 
   // "Done" and "Snooze" buttons on nudges.

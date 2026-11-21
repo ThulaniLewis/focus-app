@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tablet settings panel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&amp;family=Lexend:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#9C4F67}a:hover{color:#6E2F45}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FBF3F4; color: #3A2A2F; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; display: flex; position: relative; overflow: hidden">
+<nav aria-label="Main" style="width: 104px; background: #FFFFFF; border-right: 1px solid #EBD9DD; display: flex; flex-direction: column; align-items: center; padding: 32px 0 96px; gap: 20px">
+<a href="#" style="width: 72px; height: 72px; border-radius: 24px; color: #6E5A60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; text-decoration: none"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"></path></svg>Today</a>
+<a href="#" style="width: 72px; height: 72px; border-radius: 24px; color: #6E5A60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; text-decoration: none"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg>Spaces</a>
+<a href="#" style="width: 72px; height: 72px; border-radius: 24px; color: #6E5A60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; text-decoration: none"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>Week</a>
+<a href="#" style="margin-top: auto; width: 72px; height: 72px; border-radius: 24px; background: #F4DDE3; color: #6E2F45; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; text-decoration: none"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path></svg>Settings</a>
+</nav>
+<main style="flex: 1; padding: 32px 32px 104px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px">
+<section style="display: flex; flex-direction: column; gap: 24px">
+<h1 style="margin: 0; font-family: Lexend, system-ui, sans-serif; font-size: 44px; line-height: 48px; font-weight: 600">Settings</h1>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+<button style="height: 96px; border-radius: 24px; background: #FFFBFB; border: 1px solid #EBD9DD; font: inherit; font-size: 20px; color: #3A2A2F; text-align: left; padding: 0 24px">Android settings</button>
+<button style="height: 96px; border-radius: 24px; background: #F4DDE3; border: 1px solid #F4DDE3; font: inherit; font-size: 20px; color: #6E2F45; text-align: left; padding: 0 24px">Focus settings</button>
+</div>
+<div style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 24px; padding: 24px">
+<p style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #6E5A60">Your apps</p>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px">
+<button style="height: 88px; border-radius: 18px; background: #F3E6E9; border: none; font: inherit; font-size: 16px; color: #3A2A2F">Spotify</button>
+<button style="height: 88px; border-radius: 18px; background: #F3E6E9; border: none; font: inherit; font-size: 16px; color: #3A2A2F">YouTube</button>
+<button style="height: 88px; border-radius: 18px; background: #F3E6E9; border: none; font: inherit; font-size: 16px; color: #3A2A2F">Outlook</button>
+<button style="height: 88px; border-radius: 18px; background: #F3E6E9; border: none; font: inherit; font-size: 16px; color: #3A2A2F">Camera</button>
+</div>
+</div>
+<button style="height: 72px; border-radius: 18px; background: transparent; border: 1px solid #6E5A60; font: inherit; font-size: 20px; color: #3A2A2F">Exit to Samsung home</button>
+</section>
+<section style="background: #FFFBFB; border: 1px solid #EBD9DD; border-radius: 24px; padding: 24px; display: flex; flex-direction: column">
+<p style="margin: 0 0 8px; font-family: Lexend, system-ui, sans-serif; font-size: 28px; font-weight: 600">Focus settings</p>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 72px; border-bottom: 1px solid #EBD9DD; font-size: 20px"><span>Your routine</span><span style="color: #6E5A60">Bedtime, pick-up, wind down</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 72px; border-bottom: 1px solid #EBD9DD; font-size: 20px"><span>Spaces shown here</span><span style="color: #6E5A60">Shared only</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 72px; border-bottom: 1px solid #EBD9DD; font-size: 20px"><label for="hey">"Hey Focus"</label><input id="hey" type="checkbox" checked style="width: 28px; height: 28px; accent-color: #9C4F67"></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 72px; border-bottom: 1px solid #EBD9DD; font-size: 20px"><span>Light and dark</span><span style="color: #6E5A60">By time of day</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 72px; font-size: 20px"><span>Music per room</span><span style="color: #6E5A60">Spotify</span></div>
+<div style="margin-top: auto; background: #3A2A2F; color: #FFFFFF; border-radius: 18px; padding: 16px 20px; font-size: 16px">Money, sleep and Just for me stay on your phone</div>
+</section>
+</main>
+<div style="position: absolute; left: 0; top: 728px; width: 1280px; height: 72px; background: repeating-linear-gradient(45deg, #F3E6E9 0 10px, #EBD9DD 10px 20px); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #6E5A60">Samsung taskbar area: kept clear</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
