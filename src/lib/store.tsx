@@ -13,7 +13,7 @@ import { createSync, type SyncStatus } from './syncClient';
 import { AppState } from 'react-native';
 import { dayKey, elapsedSec, roomNameOf, slug } from './time';
 import { addToCalendar } from './calendar';
-import { migrate } from './migrate';
+import { migrate, STATE_KEY } from './migrate';
 import { applySetup } from './seed';
 import { markWith } from './marks';
 import { loadDeviceRole } from './deviceRole';
@@ -22,7 +22,7 @@ import { onClaudeUsage, type ParsedItem } from './claude';
 import * as Notifications from 'expo-notifications';
 import { type DayPlan, DEFAULT_SETTINGS, DEFAULT_SPACES, type Room, type Settings, type Space, type State, type Task } from './types';
 
-const KEY = 'focus.state.v1';
+const KEY = STATE_KEY;
 const API_KEY = 'anthropic_api_key';
 
 const id = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);

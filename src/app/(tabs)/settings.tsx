@@ -52,6 +52,7 @@ export default function Settings() {
     writeCalendarName().then(setCalName);
   }, [s.writeCalendar, s.readCalendar]);
   const dash = useDashMode();
+  const role = useDeviceRole();
   const ratio = estimateRatio(state.tasks);
   const timed = state.tasks.filter((t) => t.done && t.actualMin && t.estimateMin).length;
 
@@ -162,7 +163,18 @@ export default function Settings() {
         </Card>
       </Section>
 
-      <Section title="Places" hint="door to door">
+      {role === 'phone' && (
+        <Section title="Places" hint="on this phone only">
+          <Card>
+            <T v="body" muted>Home, your food shop and anywhere else Focus should notice you arrive and leave.</T>
+            <Button kind="soft" label="Places" onPress={() => router.navigate('/places')} />
+            <Button kind="outline" label="Places log" onPress={() => router.navigate('/places-log')} />
+            <Button kind="outline" label="Setup checklist" onPress={() => router.navigate('/permissions')} />
+          </Card>
+        </Section>
+      )}
+
+      <Section title="Travel times" hint="door to door">
         <Card>
           {s.places.map((p) => (
             <View key={p.id} style={[row, { flexDirection: 'row', alignItems: 'center', gap: space[3] }]}>

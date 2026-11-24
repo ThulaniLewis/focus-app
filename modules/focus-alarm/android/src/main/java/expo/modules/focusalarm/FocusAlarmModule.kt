@@ -69,6 +69,16 @@ class FocusAlarmModule : Module() {
       }
     }
 
+    /** A place notice that pops up full screen when allowed (Stage A: the shopping list at the shop). */
+    AsyncFunction("showPlacePopup") { id: String, title: String, body: String, uri: String ->
+      PlacePopup.show(context, id, title, body, uri)
+    }
+
+    /** Battery use is Unrestricted for Focus, so Samsung's battery saver won't stop background location. */
+    Function("batteryUnrestricted") {
+      PlacePopup.batteryUnrestricted(context)
+    }
+
     /**
      * While the alarm screen is showing: show it over the lock screen and turn the screen on.
      * Switched off again afterwards, so the rest of Focus never shows over the lock screen.

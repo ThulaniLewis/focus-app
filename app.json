@@ -2,7 +2,7 @@
   "expo": {
     "name": "Focus",
     "slug": "focus",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "focus",
@@ -26,7 +26,12 @@
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR",
         "android.permission.health.READ_SLEEP",
-        "android.permission.USE_FULL_SCREEN_INTENT"
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       "intentFilters": [
         {
@@ -101,8 +106,8 @@
         "expo-location",
         {
           "isAndroidBackgroundLocationEnabled": true,
-          "isAndroidForegroundServiceEnabled": false,
-          "locationAlwaysAndWhenInUsePermission": "Focus notices when you arrive home, at nursery or at the shop, so it can pause house jobs while you're out. Your location never leaves your phone."
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Focus notices when you arrive at and leave your places (home, your food shop), so it can bring your shopping list at the right moment. Only arrivals and departures are kept, on your phone."
         }
       ]
     ],

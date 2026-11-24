@@ -5,6 +5,7 @@ import { AccountCard } from '../../components/Account';
 import { FocusCard } from '../../components/Focus';
 import { WaitingCard } from '../../components/Waiting';
 import { SleepCard } from '../../components/SleepCard';
+import { PlacesCard, WhereLine } from '../../components/PlacesCard';
 import { featureOn } from '../../lib/features';
 import { PunctualityCards } from '../../components/Punctuality';
 import { savHomeOn } from '../../lib/comeUp';
@@ -69,6 +70,7 @@ function TodayList() {
         <View style={{ flex: 1 }}>
           <T v="label" muted>{DAY_NAMES[now.getDay()].toUpperCase()}</T>
           <T v="title">{greeting(now, state.settings.firstName)}</T>
+          <WhereLine />
         </View>
         <IconButton name="settings" label="Settings" tone="quiet" onPress={() => router.navigate('/settings')} />
       </View>
@@ -109,6 +111,8 @@ function TodayList() {
       <Button kind="soft" label="Something's come up" onPress={() => router.navigate('/comeup')} />
 
       <PermissionCard />
+
+      <PlacesCard />
 
       {!state.settings.setupSeen && (
         <Card tone="soft">

@@ -13,6 +13,10 @@ type FocusAlarmNative = {
   openExactAlarmSettings(): Promise<void>;
   openFullScreenSettings(): Promise<void>;
   showOverLockScreen(on: boolean): Promise<boolean>;
+  /** From 0.8.0: a notice that pops up full screen when allowed. Missing on older builds. */
+  showPlacePopup?(id: string, title: string, body: string, uri: string): Promise<boolean>;
+  /** From 0.8.0: battery use is Unrestricted for Focus. */
+  batteryUnrestricted?(): boolean;
 };
 
 const native = requireOptionalNativeModule<FocusAlarmNative>('FocusAlarm');

@@ -15,6 +15,9 @@ function migrateRooms(raw: unknown): Room[] {
     .map((r) => ({ name: r.name, floor: r.floor === 'up' || r.floor === 'down' ? r.floor : '' }));
 }
 
+/** Where the app's State is saved on each device (read by the background location task too). */
+export const STATE_KEY = 'focus.state.v1';
+
 export function migrate(saved: any): State {
   const s = saved && typeof saved === 'object' ? saved : {};
   const settings = { ...DEFAULT_SETTINGS, ...(s.settings ?? {}) };

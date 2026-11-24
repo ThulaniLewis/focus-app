@@ -30,6 +30,9 @@ import type { ErrorBoundaryProps } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { installCrashLog } from '../lib/crash';
 import { setupNotifications } from '../lib/notify';
+// Defines the background location tasks at the top level, so Android can run them with Focus closed.
+import '../lib/location';
+import { PlacesHost } from '../components/PlacesHost';
 
 installCrashLog();
 import { StoreProvider, useNow, useStore } from '../lib/store';
@@ -71,6 +74,7 @@ function Gate() {
       <ScreenTracker />
       <RoomLinks />
       <NotificationLinks />
+      <PlacesHost />
     </>
   );
 }
@@ -90,6 +94,12 @@ function ScreenTracker() {
 function RoomLinks() {
   useEffect(() => {
     const go = (url: string | null) => {
+      // The "shopping list?" pop-up at the shop opens focus://space/<id>.
+      const space = url?.match(/^[a-z0-9+.-]*focus:\/{0,3}space\/([^/?#]+)/i)?.[1];
+      if (space) {
+        setTimeout(() => router.navigate(`/space/${decodeURIComponent(space)}`), 50);
+        return;
+      }
       const room = roomFromLink(url);
       if (!room) return;
       // Let the tabs mount first, then open the room.
@@ -175,7 +185,13 @@ function NotificationLinks() {
       }).catch(() => go(r));
     };
     const go = (r: Notifications.NotificationResponse) => {
-      const data = r.notification.request.content.data as { taskId?: string; day?: string; roundRoom?: string } | undefined;
+      const data = r.notification.request.content.data as { taskId?: string; day?: string; roundRoom?: string; open?: string } | undefined;
+      // A place notice ("On your shopping list"): open the shopping list.
+      if (data?.open === 'shopping') {
+        const shop = latest.current.state.spaces.find((s) => s.kind === 'shopping');
+        if (shop) setTimeout(() => router.navigate(`/space/${shop.id}`), 300);
+        return;
+      }
       // The room round check-in: open the room, where the round can be stopped or carried on.
       if (data?.roundRoom) {
         const room = data.roundRoom;
