@@ -6,6 +6,7 @@ import { Icon } from '../../components/Icon';
 import { PlanList } from '../../components/Plan';
 import { Card, Chip, Screen, T } from '../../components/ui';
 import { useDiary } from '../../lib/calendar';
+import { allDayEvents } from '../../lib/dumpContext';
 import { useNow, useStore } from '../../lib/store';
 import { space, useColors } from '../../theme';
 import { dayKey } from '../../lib/time';
@@ -17,7 +18,9 @@ export default function Week() {
   const now = useNow(60000);
   const [refresh, setRefresh] = useState(0);
   useFocusEffect(useCallback(() => setRefresh((r) => r + 1), []));
-  const { events, allowed } = useDiary(state.settings.readCalendar, 8, refresh);
+  const { events: phoneEvents, allowed } = useDiary(state.settings.readCalendar, 8, refresh);
+  // Her phone diary plus Focus's own whole-day entries (her child with someone for the day).
+  const events = [...phoneEvents, ...allDayEvents(state.tasks)];
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now);

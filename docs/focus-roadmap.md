@@ -181,3 +181,4 @@ Later: run the onboarding interview with Elijah or Dad via a Claude chat (no cod
 ## Parking lot (new ideas go here first)
 
 - Let the mic answer simple questions ("what's the weather", "what's next"). Noted 21 Nov 2026 after Stage 1 testing. Not built yet.
+- **Focus 5.0: places to eat near the office.** When the work routine card shows on arriving at work, suggest places to eat nearby. Parked by brief 1b (25 Nov 2026): the work routine is meetings, work list and leave-by time only for now.

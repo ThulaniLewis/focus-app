@@ -7,13 +7,16 @@ import { normalise, type ParseResult } from './normalise';
 import { ASK_RULE, CHECK_TOOL, type CheckIn, checkInMessage, checkInPrompt, cleanCheckIn, type JobRef, type Leftover, NO_MORE_QUESTIONS, TICK_RULE } from './leftovers';
 import { dayKey, slug, toLocalISO } from './time';
 import { FOOD_GROUPS, type Settings, type Space, type State, type Task } from './types';
+import type { GeoPlace } from './geo';
+import { cleanPlaceReminders, PLACE_REMINDERS_FIELD, placesPrompt, type SuggestedReminder } from './placeTalk';
 import { cleanComeUp, COME_UP_TOOL, type ComeUpPlan, comeUpItems, comeUpPrompt } from './comeUp';
+import { AWAY_FIELD, cleanAway, cleanGrabLists, GRAB_LISTS_FIELD, shapesPrompt, type SuggestedAway, type SuggestedGrabList, UNDERSTOOD_FIELD } from './dumpShapes';
 
 export type { ParsedItem, ParseResult } from './normalise';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function system(settings: Settings, spaces: Space[], now: Date) {
+function system(settings: Settings, spaces: Space[], now: Date, context = '', phone = false) {
   const offsetMin = -now.getTimezoneOffset();
   const sign = offsetMin >= 0 ? '+' : '-';
   const off = `${sign}${String(Math.floor(Math.abs(offsetMin) / 60)).padStart(2, '0')}:${String(Math.abs(offsetMin) % 60).padStart(2, '0')}`;
@@ -22,7 +25,7 @@ function system(settings: Settings, spaces: Space[], now: Date) {
   const places = settings.places.map((p) => p.name).join(', ') || 'none yet';
   const spaceList = spaces.map((s) => `${s.id} (${s.name}${s.kind === 'general' ? '' : `, ${s.kind}`})`).join(', ');
   return `You are Focus, a calm home manager for ${settings.firstName}, a solo parent in South East London. Her daughter is Sav.
-You turn a brain dump into a short list of items for her to confirm. You suggest; she decides.
+She talks to you the way she would talk to a friend who knows her life. You work out what she means, then make it for her to confirm. You suggest; she decides.
 
 Right now on her phone it is ${DAYS[now.getDay()]} ${toLocalISO(now)} (UTC${off}). Today is ${dayKey(now)}. Work out every relative time ("tomorrow", "Thursday", "in an hour") from this, never from anything else.
 
@@ -30,8 +33,15 @@ Her spaces, as id (name): ${spaceList}.
 Rooms in her home, as slug (name, floor): ${rooms}.
 Places she has travel times for: ${places}.
 
+What is going on for her right now:
+${context || 'Nothing more known.'}
+
+${shapesPrompt(phone)}
+
+Rules for items:
+
 Kinds:
-- "event": has a fixed time (appointment, drop off, meeting, call, interview). Give "at" as local YYYY-MM-DDTHH:MM. If only a day is known with no time, use 09:00 and say so in the title ("Interview (time tbc)").
+- "event": has a fixed time or a fixed day (appointment, repair, drop off, meeting, call, interview, her child with someone for the day). Give "at" as local YYYY-MM-DDTHH:MM. Something that lasts the day with no time: all_day true and "day", no "at". An appointment with a day but no time yet: 09:00 and say so in the title ("Interview (time tbc)").
 - "task": something to do with no fixed time. Most things are tasks. Never invent a time for a task: no time pressure that isn't real. If it's for a particular day, set "day". If it has a real deadline ("by 12 tomorrow", "closes Friday 5pm"), set "due" as local YYYY-MM-DDTHH:MM. If the deadline has a day but no time ("closes 23 Nov"), set "due" as YYYY-MM-DD only; never invent a time.
 - "buy": something to buy. Set "list": "food" for groceries, or "other" for anything else (clothes, books, gifts, Sav's things, home). For food, "group" is exactly one of: ${FOOD_GROUPS.join(', ')}. For other, "group" is a short type like Clothes, Books, Sav, Home, Gifts.
 - "note": something worth keeping that is not a task: a thought, a feeling, something about a person, an idea, a memory. These are private and go in the private space. When something personal could be either, choose "note".
@@ -74,7 +84,8 @@ const TOOL = {
               required: ['item', 'from_room'],
             },
             at: { type: 'string', description: 'Events only: local YYYY-MM-DDTHH:MM' },
-            day: { type: 'string', description: 'Tasks for a particular day: YYYY-MM-DD' },
+            all_day: { type: 'boolean', description: 'Events that last the day with no time: set day, not at' },
+            day: { type: 'string', description: 'Tasks for a particular day, or the day of an all-day event: YYYY-MM-DD' },
             due: { type: 'string', description: 'A real deadline: local YYYY-MM-DDTHH:MM, or YYYY-MM-DD when only the day is known' },
             repeat_days: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 6 } },
             place: { type: 'string' },
@@ -83,6 +94,7 @@ const TOOL = {
           required: ['title', 'kind'],
         },
       },
+      understood: UNDERSTOOD_FIELD,
       notes: { type: 'array', items: { type: 'string' } },
       reply: { type: 'string' },
       done_refs: { type: 'array', items: { type: 'string' }, description: 'Refs of her open jobs she clearly says are finished.' },
@@ -145,7 +157,16 @@ async function callClaude(body: object, settings: Settings, call = 'dump'): Prom
   return data;
 }
 
-export type DumpResult = ParseResult & { doneIds: string[]; startedIds: string[]; question?: string };
+export type DumpResult = ParseResult & {
+  doneIds: string[];
+  startedIds: string[];
+  question?: string;
+  placeReminders: SuggestedReminder[];
+  /** What Claude worked out she is asking for, for the dev report. */
+  understood?: string;
+  grabLists: SuggestedGrabList[];
+  away: SuggestedAway | null;
+};
 
 /** What she's said so far: the first dump, then any answers to Focus's questions. */
 export async function parseDump(
@@ -153,7 +174,7 @@ export async function parseDump(
   settings: Settings,
   spaces: Space[],
   now = new Date(),
-  ctx: { jobs?: JobRef[]; turns?: { q?: string; said: string }[] } = {},
+  ctx: { jobs?: JobRef[]; turns?: { q?: string; said: string }[]; places?: GeoPlace[]; context?: string; phone?: boolean } = {},
 ): Promise<DumpResult> {
   const jobs = ctx.jobs ?? [];
   const turns = ctx.turns ?? [];
@@ -167,14 +188,25 @@ export async function parseDump(
     '- Bits left go in items as tasks in the right room. Do not add an item that is already one of her open jobs.',
     canAsk ? ASK_RULE : NO_MORE_QUESTIONS,
     'If you ask a question, still return every item you are sure of; they are shown after she answers.',
-  ].join('\n');
+    placesPrompt(ctx.places ?? []),
+  ]
+    .filter(Boolean)
+    .join('\n');
+  // Place reminders only when she has places (the phone). Places stay on the phone; only their names are sent.
+  // Grab lists and away are phone only too: they live with her places.
+  const phone = !!ctx.phone;
+  const extra = {
+    ...(placesPrompt(ctx.places ?? []) ? { place_reminders: PLACE_REMINDERS_FIELD } : {}),
+    ...(phone ? { grab_lists: GRAB_LISTS_FIELD, away: AWAY_FIELD } : {}),
+  };
+  const tool = { ...TOOL, input_schema: { ...TOOL.input_schema, properties: { ...TOOL.input_schema.properties, ...extra } } };
 
   // The Anthropic key lives in the focus-claude Supabase function, never on the phone.
   const body = {
     model: settings.model,
     max_tokens: 2000,
-    system: `${system(settings, spaces, now)}\n\n${loop}\n\nAlways answer by calling the ${TOOL.name} tool exactly once.`,
-    tools: [TOOL],
+    system: `${system(settings, spaces, now, ctx.context, phone)}\n\n${loop}\n\nAlways answer by calling the ${TOOL.name} tool exactly once.`,
+    tools: [tool],
     tool_choice: { type: 'auto' },
     messages: [{ role: 'user', content: turns.length > 1 ? checkInMessage(turns) : text }],
   };
@@ -182,14 +214,18 @@ export async function parseDump(
   const block = (data as any)?.content?.find((c: any) => c.type === 'tool_use');
   if (!block) {
     const said = (data as any)?.content?.find((c: any) => c.type === 'text')?.text;
-    return { ...normalise({ items: [], notes: [], reply: said ? String(said).slice(0, 200) : "I couldn't sort that one. Try saying it a different way." }, settings, spaces), doneIds: [], startedIds: [] };
+    return { ...normalise({ items: [], notes: [], reply: said ? String(said).slice(0, 200) : "I couldn't sort that one. Try saying it a different way." }, settings, spaces), doneIds: [], startedIds: [], placeReminders: [], grabLists: [], away: null };
   }
   const base = normalise(block.input, settings, spaces);
   const loopBits = cleanCheckIn({ done_refs: block.input?.done_refs, started_refs: block.input?.started_refs, question: block.input?.question, jobs: [] }, { jobs, roomSlugs: [], today: dayKey(now), tomorrow: dayKey(now) });
   // Don't re-add a job that's already open.
   const open = new Set(jobs.map((j) => `${j.room ?? ''}|${j.title.toLowerCase()}`));
   const items = base.items.filter((it) => !open.has(`${it.room ?? ''}|${it.title.toLowerCase()}`));
-  return { ...base, items, doneIds: loopBits.doneIds, startedIds: loopBits.startedIds, question: loopBits.question };
+  const placeReminders = cleanPlaceReminders(block.input?.place_reminders, ctx.places ?? [], dayKey(now));
+  const grabLists = phone ? cleanGrabLists(block.input?.grab_lists, ctx.places ?? []) : [];
+  const away = phone ? cleanAway(block.input?.away, ctx.places ?? [], dayKey(now)) : null;
+  const understood = typeof block.input?.understood === 'string' && block.input.understood.trim() ? block.input.understood.trim().slice(0, 300) : undefined;
+  return { ...base, items, doneIds: loopBits.doneIds, startedIds: loopBits.startedIds, question: loopBits.question, placeReminders, grabLists, away, understood };
 }
 
 export { normalise };

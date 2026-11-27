@@ -9,12 +9,21 @@ import { roomName } from '../../components/TaskRow';
 import { Button, Card, Check, Chip, Screen, Section, T } from '../../components/ui';
 import { ClaudeError, type DumpResult, type ParsedItem, parseDump } from '../../lib/claude';
 import { type JobRef, openJobs } from '../../lib/leftovers';
-import { isTabletDevice } from '../../lib/device';
+import { isTabletDevice, useDeviceRole } from '../../lib/device';
 import { isPrivateSpace } from '../../lib/sync';
 import { useStore } from '../../lib/store';
 import { space, useColors } from '../../theme';
 import { dayKey, fmtTime, parseLocal } from '../../lib/time';
 import { DAY_SHORT } from '../../lib/views';
+import { PlaceReminderCheck, type ReminderAnswer } from '../../components/PlaceReminderCheck';
+import { featureOn } from '../../lib/features';
+import { addGrabList, addReminder, linkTask, setAway, useGeo } from '../../lib/geoStore';
+import { useDiary } from '../../lib/calendar';
+import { dumpContext } from '../../lib/dumpContext';
+import type { SuggestedAway, SuggestedGrabList } from '../../lib/dumpShapes';
+import { LinkCheck, type LinkAnswer } from '../../components/LinkedTasks';
+import { suggestLink } from '../../lib/placeLinks';
+import type { SuggestedReminder } from '../../lib/placeTalk';
 
 function describeWhen(at?: string, repeatDays?: number[]) {
   if (!at) return undefined;
@@ -46,10 +55,30 @@ export default function Dump() {
   const [waiting, setWaiting] = useState<DumpResult | null>(null);
   const jobsRef = useRef<JobRef[]>([]);
   const [jobMarks, setJobMarks] = useState<{ id: string; title: string; mark: 'done' | 'started' | 'leave' }[]>([]);
+  // Place reminders, phone only: each one waits for her yes, change or no.
+  const role = useDeviceRole();
+  const geo = useGeo();
+  const places = role === 'phone' && featureOn(state.settings, 'places') ? geo.places : [];
+  const [placeRems, setPlaceRems] = useState<(SuggestedReminder & { answer: ReminderAnswer })[]>([]);
+  // Tasks that name one of her places: "Link this to …?" Yes, change or no. By item index.
+  const [links, setLinks] = useState<Record<number, { placeId: string; answer: LinkAnswer }>>({});
+  // Brief 4: one list for one trip, and away from home. Phone only, like places.
+  const [grabs, setGrabs] = useState<(Omit<SuggestedGrabList, 'items'> & { keep: boolean; items: { text: string; ifFound?: boolean; keep: boolean }[] })[]>([]);
+  const [away, setAwayPick] = useState<(SuggestedAway & { keep: boolean }) | null>(null);
+  const { events: phoneEvents } = useDiary(state.settings.readCalendar, 2);
 
   const show = (r: DumpResult) => {
     setResult(r);
     setItems(r.items.map((it) => ({ ...it, keep: true })));
+    setPlaceRems(r.placeReminders.map((x) => ({ ...x, answer: null })));
+    const sug: Record<number, { placeId: string; answer: LinkAnswer }> = {};
+    r.items.forEach((it, i) => {
+      const hit = it.kind === 'task' || it.kind === 'event' ? suggestLink(it.title, places) : null;
+      if (hit) sug[i] = { placeId: hit.id, answer: null };
+    });
+    setLinks(sug);
+    setGrabs(r.grabLists.map((g) => ({ ...g, keep: true, items: g.items.map((i) => ({ ...i, keep: true })) })));
+    setAwayPick(r.away ? { ...r.away, keep: true } : null);
     const titleOf = (id: string) => state.tasks.find((t) => t.id === id)?.title ?? 'A job';
     setJobMarks([
       ...r.doneIds.map((id) => ({ id, title: titleOf(id), mark: 'done' as const })),
@@ -70,7 +99,10 @@ export default function Dump() {
       const now = new Date();
       if (!turns.length) jobsRef.current = openJobs(state, undefined, now);
       const next = [...turns, { q: question ?? undefined, said: sentText }];
-      const r = await parseDump(sentText, state.settings, state.spaces, now, { jobs: jobsRef.current, turns: next });
+      const phone = role === 'phone';
+      // The whole picture, every time (big build section 0): where she is, her places, her diary, her rhythms.
+      const context = dumpContext({ state, now, events: phoneEvents, ...(phone ? { places: geo.places, presence: geo.presence, grabLists: geo.grabLists, away: geo.away && !geo.away.endedAt ? geo.away : null } : {}) });
+      const r = await parseDump(sentText, state.settings, state.spaces, now, { jobs: jobsRef.current, turns: next, places, context, phone });
       if (r.question && next.length < 3) {
         setTurns(next);
         setQuestion(r.question);
@@ -98,6 +130,10 @@ export default function Dump() {
     setQuestion(null);
     setWaiting(null);
     setJobMarks([]);
+    setPlaceRems([]);
+    setLinks({});
+    setGrabs([]);
+    setAwayPick(null);
   };
 
   const save = () => {
@@ -109,7 +145,15 @@ export default function Dump() {
       at: new Date().toISOString(),
       kind: 'dictation',
       said: turns.map((t) => t.said).join(' / '),
-      made: kept0.map((i) => ({ id: '', title: i.title, spaceId: i.kind === 'note' ? 'me' : i.spaceId })),
+      made: [
+        ...kept0.map((i) => ({ id: '', title: i.title, spaceId: i.kind === 'note' ? 'me' : i.spaceId })),
+        // Only that a place reminder was made: the place itself stays on the phone.
+        ...placeRems.filter((r) => r.answer === 'yes').map((r) => ({ id: '', title: `Place reminder: ${r.text}`, spaceId: 'me' })),
+        // Grab lists and away stay on the phone, so they log as private.
+        ...grabs.filter((g) => g.keep).map((g) => ({ id: '', title: `Grab list: ${g.title} (${g.items.filter((i) => i.keep).length})`, spaceId: 'me' })),
+        ...(away?.keep ? [{ id: '', title: `Away: ${away.placeName}`, spaceId: 'me' }] : []),
+      ],
+      ...(result.understood ? { understood: result.understood } : {}),
       ticked: asLogged(jobMarks.filter((j) => j.mark === 'done').map((j) => j.id)),
       started: asLogged(jobMarks.filter((j) => j.mark === 'started').map((j) => j.id)),
       ...(turns.find((t) => t.q) ? { question: turns.filter((t) => t.q).map((t) => t.q).join(' / ') } : {}),
@@ -123,10 +167,28 @@ export default function Dump() {
         addItems(shared);
         if (shared.length < kept.length || result.notes.length) setError('Private notes and Money only save on your phone, so I left those out here.');
       } else {
-        addItems(kept);
+        const ids = addItems(kept);
         addNotes(result.notes);
+        // Link the ones she said yes to (phone only: the links live in the places store).
+        const keptIdx = items.map((it, i) => (it.keep ? i : -1)).filter((i) => i >= 0);
+        keptIdx.forEach((i, j) => {
+          const l = links[i];
+          if (l?.answer === 'yes' && ids[j]) linkTask(ids[j], l.placeId).catch(() => {});
+        });
       }
     });
+    for (const g of grabs.filter((x) => x.keep)) {
+      const items = g.items.filter((i) => i.keep).map(({ keep, ...i }) => i);
+      if (items.length) addGrabList({ title: g.title, placeId: g.placeId, items }).catch(() => {});
+    }
+    if (away?.keep) {
+      const { keep, ...a } = away;
+      setAway(a).catch(() => {});
+    }
+    for (const r of placeRems.filter((x) => x.answer === 'yes')) {
+      const { answer, ...rem } = r;
+      addReminder(rem).catch(() => {});
+    }
     reset();
     router.navigate('/');
   };
@@ -151,7 +213,8 @@ export default function Dump() {
     const groups = [...state.spaces, { id: '', name: 'No space yet', kind: 'general' as const, privacy: 'everywhere' as const, icon: 'inbox' }]
       .map((sp) => ({ sp, rows: indexed.filter(({ it }) => (it.spaceId ?? '') === sp.id) }))
       .filter((g) => g.rows.length);
-    const count = items.filter((i) => i.keep).length;
+    const count = items.filter((i) => i.keep).length + placeRems.filter((r) => r.answer === 'yes').length + grabs.filter((g) => g.keep).length + (away?.keep ? 1 : 0);
+    const unanswered = placeRems.some((r) => r.answer === null);
     return (
       <Screen>
         <T v="title">{result.reply || 'Here is how that sorts out'}</T>
@@ -175,6 +238,59 @@ export default function Dump() {
             </Card>
           </Section>
         )}
+        {away ? (
+          <Card style={{ flexDirection: 'row', gap: space[3], alignItems: 'flex-start' }}>
+            <Check on={away.keep} onPress={() => setAwayPick({ ...away, keep: !away.keep })} label={`Away tonight at ${away.placeName}`} />
+            <View style={{ flex: 1, gap: space[1] }}>
+              <T v="bodyStrong" style={!away.keep ? { opacity: 0.45 } : undefined}>{`Away tonight at ${away.placeName}`}</T>
+              <T v="caption" muted>{away.reason ? `${away.reason.charAt(0).toUpperCase()}${away.reason.slice(1)}. ` : ''}Stays on this phone.</T>
+            </View>
+          </Card>
+        ) : null}
+        {grabs.map((g, gi) => (
+          <Card key={`grab-${gi}`} style={{ gap: space[1], opacity: g.keep ? 1 : 0.5 }}>
+            <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'center' }}>
+              <Check on={g.keep} onPress={() => setGrabs((cur) => cur.map((x, j) => (j === gi ? { ...x, keep: !x.keep } : x)))} label={g.title} />
+              <View style={{ flex: 1 }}>
+                <T v="label" muted>GRAB LIST</T>
+                <T v="heading">{g.title}</T>
+                {g.placeId ? <T v="caption" muted>{`For ${places.find((p) => p.id === g.placeId)?.name ?? 'a place'}. Stays on this phone.`}</T> : <T v="caption" muted>Stays on this phone.</T>}
+              </View>
+            </View>
+            {g.items.map((it, ii) => (
+              <View key={ii} style={{ flexDirection: 'row', gap: space[3], alignItems: 'center', minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line }}>
+                <Check on={it.keep} onPress={() => setGrabs((cur) => cur.map((x, j) => (j === gi ? { ...x, items: x.items.map((y, k) => (k === ii ? { ...y, keep: !y.keep } : y)) } : x)))} label={it.text} />
+                <View style={{ flex: 1 }}>
+                  <T v="body" style={!it.keep ? { opacity: 0.45 } : undefined}>{it.text}</T>
+                  {it.ifFound ? <T v="caption" muted>if you find it</T> : null}
+                </View>
+              </View>
+            ))}
+          </Card>
+        ))}
+        {placeRems.map((r, i) => (
+          <PlaceReminderCheck
+            key={`${r.placeId}-${i}`}
+            r={r}
+            placeName={places.find((p) => p.id === r.placeId)?.name ?? 'that place'}
+            answer={r.answer}
+            onAnswer={(a) => setPlaceRems((cur) => cur.map((x, j) => (j === i ? { ...x, answer: a } : x)))}
+            onChange={(text) => setPlaceRems((cur) => cur.map((x, j) => (j === i ? { ...x, text } : x)))}
+          />
+        ))}
+        {Object.entries(links)
+          .filter(([i]) => items[Number(i)]?.keep)
+          .map(([i, l]) => (
+            <LinkCheck
+              key={`link-${i}`}
+              title={items[Number(i)].title}
+              placeId={l.placeId}
+              places={places}
+              answer={l.answer}
+              onAnswer={(a) => setLinks((cur) => ({ ...cur, [i]: { ...cur[Number(i)], answer: a } }))}
+              onPlace={(pid) => setLinks((cur) => ({ ...cur, [i]: { placeId: pid, answer: 'yes' } }))}
+            />
+          ))}
         {groups.map(({ sp, rows }) => {
           const isPrivate = sp.kind === 'private';
           return (
@@ -187,7 +303,8 @@ export default function Dump() {
                   </View>
                 )}
                 {rows.map(({ it, i }, n) => {
-                  const when = describeWhen(it.at, it.repeatDays);
+                  const allDay = it.allDay && it.day ? new Date(`${it.day}T00:00:00`) : null;
+                  const when = describeWhen(it.at, it.repeatDays) ?? (allDay ? `${DAY_SHORT[allDay.getDay()]} ${allDay.getDate()}/${allDay.getMonth() + 1}, all day` : undefined);
                   const room = roomName(state.settings.rooms, it.room);
                   return (
                     <View key={i} style={{ flexDirection: 'row', gap: space[3], paddingVertical: space[2], borderTopWidth: n || isPrivate ? StyleSheet.hairlineWidth : 0, borderTopColor: c.line }}>
@@ -214,13 +331,14 @@ export default function Dump() {
             </Section>
           );
         })}
-        {!items.length && !result.notes.length && !jobMarks.length && <T v="body" muted>Nothing to add from that one.</T>}
+        {!items.length && !placeRems.length && !grabs.length && !away && !result.notes.length && !jobMarks.length && <T v="body" muted>Nothing to add from that one.</T>}
         {result.notes.length > 0 && (
           <Section title="Notes about Focus">
             <Card tone="sunken">{result.notes.map((n, i) => <T key={i} v="body">{n}</T>)}</Card>
           </Section>
         )}
-        <Button label={count ? `Add ${count}` : result.notes.length || jobMarks.length ? 'Save' : 'Done'} onPress={save} />
+        {unanswered ? <T v="caption" muted>Say yes or no to the place reminder first.</T> : null}
+        <Button label={count ? `Add ${count}` : result.notes.length || jobMarks.length ? 'Save' : 'Done'} onPress={save} disabled={unanswered} />
         <Button kind="quiet" label="Keep talking" onPress={() => { setResult(null); setTurns([]); setText(turns.map((t) => t.said).join(' ')); }} />
       </Screen>
     );

@@ -32,3 +32,17 @@ export function tilesFor(lat: number, lon: number, zoom: number, width: number, 
     }
   return out;
 }
+
+/** The point at a place on the world map: the opposite of worldPx. */
+export function latLonAt(x: number, y: number, zoom: number): { lat: number; lon: number } {
+  const n = TILE * 2 ** zoom;
+  const lon = (x / n) * 360 - 180;
+  const lat = (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI;
+  return { lat, lon };
+}
+
+/** Where the pin lands when the map under it is dragged by (dx, dy) pixels. The pin stays in the middle. */
+export function dragPin(lat: number, lon: number, zoom: number, dx: number, dy: number): { lat: number; lon: number } {
+  const c = worldPx(lat, lon, zoom);
+  return latLonAt(c.x - dx, c.y - dy, zoom);
+}

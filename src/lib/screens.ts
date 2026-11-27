@@ -26,6 +26,8 @@ const TITLES: [RegExp, string][] = [
   [/^\/place\//, 'Place'],
   [/^\/places-log$/, 'Places log'],
   [/^\/permissions$/, 'Setup checklist'],
+  [/^\/place-reminder\//, 'A place reminder going off'],
+  [/^\/work\//, 'Arriving at work: the work routine card'],
 ];
 
 /** The mockup title for a route ("/space/jobs" → "Space: jobs"). */

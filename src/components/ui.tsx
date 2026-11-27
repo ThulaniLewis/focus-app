@@ -297,3 +297,23 @@ export function IconButton({ name, label, onPress, tone = 'soft', size = 44 }: {
     </Pressable>
   );
 }
+
+/** An on/off switch with its label (a sentence is fine). */
+export function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  // Drawn by hand rather than React Native's Switch, which crashed this screen on the phone.
+  const c = useColors();
+  return (
+    <Pressable
+      onPress={() => onChange(!value)}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 48 }}
+    >
+      <T v="body" style={{ flex: 1 }}>{label}</T>
+      <View style={{ width: 48, height: 28, borderRadius: 14, padding: 3, backgroundColor: value ? c.primary : c.line, alignItems: value ? 'flex-end' : 'flex-start' }}>
+        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: value ? c.onPrimary : c.inkMuted }} />
+      </View>
+    </Pressable>
+  );
+}

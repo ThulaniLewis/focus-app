@@ -31,6 +31,8 @@ export type Task = {
   place?: string;
   /** Claude's estimate in minutes. */
   estimateMin?: number;
+  /** A diary event that lasts the day, with no time (her child is with someone): kind "event", `day` set, no `at`. Never a tick box. */
+  allDay?: boolean;
   /** Day the task belongs to, "YYYY-MM-DD". Undated tasks show until done. */
   day?: string;
   /** Shopping: which list and which group within it. */

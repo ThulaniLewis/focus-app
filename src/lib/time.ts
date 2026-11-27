@@ -241,6 +241,7 @@ export function tasksFor(state: State, day: string): Task[] {
       return !isDoneOn(t, day) || (!t.repeatDays?.length && doneOnDay(t, day)) || !!t.repeatDays?.length;
     }
     if (t.at) return false; // real fixed times live in the agenda
+    if (t.kind === 'event') return false; // whole-day diary events live in the diary, never a tick box
     if (t.day && t.day !== day) return t.day < day && !t.done; // carry unfinished forward
     return !t.done || doneOnDay(t, day);
   }).sort(

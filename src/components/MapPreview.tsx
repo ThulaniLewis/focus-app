@@ -1,7 +1,8 @@
 // A small map to check a place's pin and circle: OpenStreetMap tiles (free, no key), pin in the middle.
-import React from 'react';
-import { Image, View } from 'react-native';
-import { metresPerPx, TILE, tilesFor, zoomFor } from '../lib/mapTiles';
+// With onMove, she can drag the map under the pin to nudge it, like most map apps.
+import React, { useRef, useState } from 'react';
+import { type GestureResponderEvent, Image, View } from 'react-native';
+import { dragPin, metresPerPx, TILE, tilesFor, zoomFor } from '../lib/mapTiles';
 import { radius, useColors, withAlpha } from '../theme';
 import { Icon } from './Icon';
 import { T } from './ui';
@@ -9,20 +10,72 @@ import { T } from './ui';
 /** OpenStreetMap asks apps to say who they are when loading tiles. */
 const TILE_HEADERS = { 'User-Agent': 'Focus-home-planner/0.8 (personal app)' };
 
-export function MapPreview({ lat, lon, radiusM, width, height = 200 }: { lat: number; lon: number; radiusM: number; width: number; height?: number }) {
+export function MapPreview({
+  lat,
+  lon,
+  radiusM,
+  width,
+  height = 200,
+  onMove,
+}: {
+  lat: number;
+  lon: number;
+  radiusM: number;
+  width: number;
+  height?: number;
+  /** Called with the new pin when she lets go after dragging the map. */
+  onMove?: (p: { lat: number; lon: number }) => void;
+}) {
   const c = useColors();
+  const [drag, setDrag] = useState({ dx: 0, dy: 0 });
+  const zoom = zoomFor(lat, radiusM, Math.min(Math.max(width, 1), height));
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const pageXY = (e: GestureResponderEvent) => ({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY });
+  const touch = onMove
+    ? {
+        onStartShouldSetResponder: () => true,
+        // Keep the drag even if the screen around it would like to scroll.
+        onResponderTerminationRequest: () => false,
+        onResponderGrant: (e: GestureResponderEvent) => {
+          start.current = pageXY(e);
+        },
+        onResponderMove: (e: GestureResponderEvent) => {
+          const from = start.current;
+          if (!from) return;
+          const now = pageXY(e);
+          setDrag({ dx: now.x - from.x, dy: now.y - from.y });
+        },
+        onResponderRelease: (e: GestureResponderEvent) => {
+          const from = start.current;
+          start.current = null;
+          setDrag({ dx: 0, dy: 0 });
+          if (!from) return;
+          const now = pageXY(e);
+          const dx = now.x - from.x;
+          const dy = now.y - from.y;
+          if (Math.abs(dx) + Math.abs(dy) > 2) onMove(dragPin(lat, lon, zoom, dx, dy));
+        },
+        onResponderTerminate: () => {
+          start.current = null;
+          setDrag({ dx: 0, dy: 0 });
+        },
+      }
+    : {};
   if (width <= 0) return null;
-  const zoom = zoomFor(lat, radiusM, Math.min(width, height));
   const r = radiusM / metresPerPx(lat, zoom);
-  const tiles = tilesFor(lat, lon, zoom, width, height);
+  // A tile's width spare all round, so dragging doesn't show blank edges.
+  const spare = onMove ? TILE : 0;
+  const tiles = tilesFor(lat, lon, zoom, width + spare * 2, height + spare * 2);
   return (
     <View
       accessible
       accessibilityLabel={`Map of the place, with a ${Math.round(radiusM)} metre circle`}
+      accessibilityHint={onMove ? 'Drag the map to move the pin' : undefined}
+      {...touch}
       style={{ width, height, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: c.surfaceSunken }}
     >
       {tiles.map((t) => (
-        <Image key={t.key} source={{ uri: t.url, headers: TILE_HEADERS }} style={{ position: 'absolute', left: t.x, top: t.y, width: TILE, height: TILE }} />
+        <Image key={t.key} source={{ uri: t.url, headers: TILE_HEADERS }} style={{ position: 'absolute', left: t.x - spare + drag.dx, top: t.y - spare + drag.dy, width: TILE, height: TILE }} />
       ))}
       <View
         pointerEvents="none"

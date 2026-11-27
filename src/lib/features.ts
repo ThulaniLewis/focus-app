@@ -11,7 +11,7 @@ export type Feature = { id: FeatureId; name: string; about: string };
 export const FEATURES: Feature[] = [
   { id: 'sleep', name: 'Sleep', about: 'Reads last night from Health Connect and offers a lighter day after a short night. Phone only.' },
   { id: 'weather', name: 'Weather', about: 'Shows the weather for your town under the date on Today, and on the tablet Dash. Only the town is sent to Open-Meteo, never where you are.' },
-  { id: 'places', name: 'Home or out', about: 'Notices when you arrive at and leave your places, keeps a log of it, and brings your shopping list when you leave home or reach your food shop. Phone only: your places never leave this phone.' },
+  { id: 'places', name: 'Home or out', about: 'Notices when you arrive at and leave your places, keeps a log of it, and does what fits each place: your shopping list at your food shop, reminders for a place when you get there, your work routine at work. Phone only: your places never leave this phone.' },
   { id: 'punctuality', name: 'On time or late', about: 'Asks how a drop-off or appointment went, and suggests a new leave-by time if you keep running late.' },
 ];
 

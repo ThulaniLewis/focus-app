@@ -53,7 +53,7 @@ export function PlacesCard() {
     return (
       <Card tone="soft">
         <T v="bodyStrong">Tell Focus where home is</T>
-        <T v="body" muted>{"Then it knows when you're out, and can bring your shopping list when you leave or reach the shop."}</T>
+        <T v="body" muted>{"Then it knows when you're out, brings your shopping list at your food shop, and shows reminders for your places."}</T>
         <Button kind="soft" label="Add home" onPress={() => router.navigate('/place/new')} />
       </Card>
     );

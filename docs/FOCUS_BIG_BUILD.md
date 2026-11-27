@@ -6,6 +6,29 @@ Work stage by stage. **At the end of every stage: tests pass, commit, then stop 
 
 ---
 
+## 0. Core principle: Claude is the brain, Focus is the memory and the screens (27 Nov)
+
+**Why:** When Thulani talks to Claude directly, Claude understands what she means and makes the right thing. But Claude doesn't hold her life between chats: routines, places, history, what she skipped, where she is right now. Focus does hold all that, and shows it at the right moment on her phone and tablet. But on its own Focus only understands what it was built to expect, so every new situation needs a new rule. The dump on 27 Nov showed it: Focus was still cutting her sentences into tasks and labelling each one, one step on from the very first version, with no sense of what she was actually asking for.
+
+**What Focus should be:** the app that remembers and turns up at the right time, with Claude as the understanding inside it.
+
+**How every AI step works from now on:**
+1. **Focus gives Claude the whole picture, every time.** Where she is now and her saved places, date, day and time, today's and tomorrow's diary, fixed rhythms (who has Sav when), what's on her lists, recent history (skips, what she said earlier today), and her profile. Built as one shared context bundle, not pieced together per screen.
+2. **Claude works out what she means first**, for the whole message, not sentence by sentence. "What is she asking for, and what's going on for her right now?"
+3. **Claude picks from a set of actions Focus offers** (tool calls): make a list, add to the diary, set a place reminder, start or end away mode, add tasks to a space, add shopping, save a note, pause or move routines, ask her one question. One message can lead to several actions.
+4. **Focus shows the result and asks before it adds anything**, as the "never acts on its own" rule. Screens (Today, lists, timers, wind down, tablet) are the front end for what Claude decided.
+
+**Rules that follow from it:**
+- No fixed per-sentence pipeline that forces every item into a space, room, privacy level and time estimate. Those are things Claude may set when they help, not boxes every item must fill.
+- New behaviour should mostly be a **new action or more context**, not a new hard-coded rule. Actions and their descriptions are data, so they can be added without a rebuild where possible.
+- **The test for every bug:** "If she'd said this to Claude in a chat, with the same context, what would Claude have done?" That answer is what Focus should do. Use real dumps word for word as test cases.
+- Privacy rules still apply to what Claude sees and does: phone-only data never goes to the tablet or gets read aloud, and is only sent to Claude through the Edge Function.
+- Every call to Claude still injects the real device timestamp.
+
+Brief 4 is the first step towards this for dumps. Later briefs move wind down, check-ins and talk it through onto the same context bundle and actions.
+
+---
+
 ## 1. Rules that never bend
 
 **Security**
@@ -115,3 +138,4 @@ Work stage by stage. **At the end of every stage: tests pass, commit, then stop 
 5. Ship: OTA or EAS build needed (and runtime version if bumped).
 6. Anything Thulani has to do (sign-ins, settings, permissions).
 7. Commit hash.
+8. For any AI step touched: one real dump or message, and what Focus did with it compared with what Claude would have done.

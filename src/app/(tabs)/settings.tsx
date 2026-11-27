@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { AccountCard, Field } from '../../components/Account';
-import { Button, Card, Header, Screen, Section, T } from '../../components/ui';
+import { Button, Card, Header, Screen, Section, T, Toggle } from '../../components/ui';
 import { calendarAllowed, writeCalendarName } from '../../lib/calendar';
 import { FEATURES, featureOn, switchFeature } from '../../lib/features';
 import { LOOKS } from '../../lib/look';
@@ -355,25 +355,6 @@ export function WeatherTown() {
 
 const nextFloor = (f: Floor): Floor => (f === 'up' ? 'down' : f === 'down' ? '' : 'up');
 const floorLabel = (f: Floor) => (f === 'up' ? 'Upstairs' : f === 'down' ? 'Downstairs' : 'Either / other');
-
-function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
-  // Drawn by hand rather than React Native's Switch, which crashed this screen on the phone.
-  const c = useColors();
-  return (
-    <Pressable
-      onPress={() => onChange(!value)}
-      accessibilityRole="switch"
-      accessibilityState={{ checked: value }}
-      accessibilityLabel={label}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 48 }}
-    >
-      <T v="body" style={{ flex: 1 }}>{label}</T>
-      <View style={{ width: 48, height: 28, borderRadius: 14, padding: 3, backgroundColor: value ? c.primary : c.line, alignItems: value ? 'flex-end' : 'flex-start' }}>
-        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: value ? c.onPrimary : c.inkMuted }} />
-      </View>
-    </Pressable>
-  );
-}
 
 function NumberRowInline({ value, onSave }: { value: number; onSave: (n: number) => void }) {
   const [v, setV] = useState(String(value));

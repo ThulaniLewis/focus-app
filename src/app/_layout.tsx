@@ -94,10 +94,11 @@ function ScreenTracker() {
 function RoomLinks() {
   useEffect(() => {
     const go = (url: string | null) => {
-      // The "shopping list?" pop-up at the shop opens focus://space/<id>.
-      const space = url?.match(/^[a-z0-9+.-]*focus:\/{0,3}space\/([^/?#]+)/i)?.[1];
-      if (space) {
-        setTimeout(() => router.navigate(`/space/${decodeURIComponent(space)}`), 50);
+      // Place pop-ups: the shopping list (focus://space/<id>), a place's reminders and the work routine.
+      const placeLink = url?.match(/^[a-z0-9+.-]*focus:\/{0,3}(space|place-reminder|work)\/([^/?#]+)/i);
+      if (placeLink) {
+        const to = `/${placeLink[1].toLowerCase()}/${decodeURIComponent(placeLink[2])}`;
+        setTimeout(() => router.navigate(to as any), 50);
         return;
       }
       const room = roomFromLink(url);
@@ -185,7 +186,13 @@ function NotificationLinks() {
       }).catch(() => go(r));
     };
     const go = (r: Notifications.NotificationResponse) => {
-      const data = r.notification.request.content.data as { taskId?: string; day?: string; roundRoom?: string; open?: string } | undefined;
+      const data = r.notification.request.content.data as { taskId?: string; day?: string; roundRoom?: string; open?: string; placeId?: string; warn?: string } | undefined;
+      // A place reminder, its "Did you …?", the day-before warning, or the work routine.
+      if ((data?.open === 'place-reminder' || data?.open === 'work') && data.placeId) {
+        const to = data.open === 'work' ? `/work/${data.placeId}` : `/place-reminder/${data.placeId}${data.warn ? `?warn=${encodeURIComponent(data.warn)}` : ''}`;
+        setTimeout(() => router.navigate(to as any), 300);
+        return;
+      }
       // A place notice ("On your shopping list"): open the shopping list.
       if (data?.open === 'shopping') {
         const shop = latest.current.state.spaces.find((s) => s.kind === 'shopping');

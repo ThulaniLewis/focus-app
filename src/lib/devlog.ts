@@ -10,7 +10,7 @@ export type LoggedTask = { id: string; title: string; spaceId?: string };
 export type DevEvent =
   | { at: string; kind: 'change'; label: string; tasks?: LoggedTask[] }
   /** A dictation next to what Focus made of it. */
-  | { at: string; kind: 'dictation'; said: string; made: LoggedTask[]; ticked: LoggedTask[]; started: LoggedTask[]; question?: string }
+  | { at: string; kind: 'dictation'; said: string; made: LoggedTask[]; ticked: LoggedTask[]; started: LoggedTask[]; question?: string; /** What Claude worked out she was asking for (brief 4). */ understood?: string }
   /** "Note for Claude": what she said, the screen she was on, and what was going on. */
   | { at: string; kind: 'note'; text: string; screen: string; context: string }
   | { at: string; kind: 'claude'; call: string; model: string; inputTokens: number; outputTokens: number };
@@ -146,6 +146,7 @@ export function buildReport(state: State, opts: { includePrivate: boolean; now: 
     const said = !includePrivate && touchedPrivate ? PRIVATE : d.said;
     lines.push(`- ${stamp(d.at)}: "${said}"`, `  - Made: ${list(d.made)}`, `  - Ticked: ${list(d.ticked)}`, `  - Started: ${list(d.started)}`);
     if (d.question) lines.push(`  - Asked: ${d.question}`);
+    if (d.understood && said !== PRIVATE) lines.push(`  - Focus understood: ${d.understood}`);
   }
 
   const rooms = state.settings.rooms;

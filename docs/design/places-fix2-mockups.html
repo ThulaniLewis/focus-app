@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Focus: places know what they are (brief 1b, Fix 2 mockups)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&family=Lexend:wght@600&display=swap">
+<style>
+/* Colours are the theme tokens (docs/design/focus-tokens.json), light and dark. */
+.light{--bg:#FBF3F4;--surface:#FFFBFB;--raised:#FFFFFF;--sunken:#F3E6E9;--line:#EBD9DD;--ink:#3A2A2F;--muted:#6E5A60;--primary:#9C4F67;--onPrimary:#FFFFFF;--primarySoft:#F4DDE3;--primaryStrong:#6E2F45;--nudgeSoft:#FCE6D8;--nudgeInk:#6B3A1E;--cautionSoft:#F3DFD9;--cautionInk:#6E3226;--outline:#B3A2A7}
+.dark{--bg:#1C1719;--surface:#261F22;--raised:#30272A;--sunken:#141012;--line:#3D3236;--ink:#F1E7E9;--muted:#BBA8AE;--primary:#E3A9BA;--onPrimary:#2E1520;--primarySoft:#43262F;--primaryStrong:#F2CBD6;--nudgeSoft:#3D2A1E;--nudgeInk:#F5CDB2;--cautionSoft:#40261F;--cautionInk:#F0C4B8;--outline:#5A4A50}
+*{box-sizing:border-box}
+body{margin:0;padding:32px;background:#E9E1E3;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;color:#3A2A2F}
+h1.page{font-family:Lexend,system-ui,sans-serif;font-size:28px;margin:0 0 4px}
+.intro{max-width:880px;margin:0 0 32px;line-height:24px}
+.board{margin:0 0 48px}
+.board>h2{font-family:Lexend,system-ui,sans-serif;font-size:20px;margin:0 0 4px}
+.board>p{margin:0 0 16px;max-width:880px;color:#6E5A60}
+.pair{display:flex;gap:28px;flex-wrap:wrap}
+.phone{width:375px;min-height:780px;background:var(--bg);color:var(--ink);border-radius:32px;overflow:hidden;font-size:16px;line-height:24px;box-shadow:0 2px 12px rgba(0,0,0,.12);display:flex;flex-direction:column;position:relative}
+.tag{font:600 12px/16px 'Atkinson Hyperlegible Next';letter-spacing:.06em;text-transform:uppercase;color:#6E5A60;margin:0 0 6px}
+.status{display:flex;justify-content:space-between;padding:12px 22px 0;font-size:13px;color:var(--muted)}
+.head{padding:16px 20px 8px}
+.back{color:var(--primary);font-weight:600;font-size:15px}
+.kicker{font:600 12px/16px 'Atkinson Hyperlegible Next';letter-spacing:.08em;color:var(--muted);margin-top:12px}
+.title{font:600 28px/34px Lexend,system-ui,sans-serif;margin:2px 0 0}
+.sub{color:var(--muted);margin:4px 0 0}
+main{padding:8px 20px 24px;display:flex;flex-direction:column;gap:16px}
+.sec{font:600 18px/24px Lexend,system-ui,sans-serif;margin:8px 0 -4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:4px 16px}
+.card.pad{padding:16px}
+.row{display:flex;gap:12px;align-items:center;min-height:64px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.ico{width:36px;height:36px;border-radius:12px;background:var(--primarySoft);color:var(--primaryStrong);display:flex;align-items:center;justify-content:center;flex:none}
+.ico svg{width:18px;height:18px}
+.grow{flex:1;min-width:0}
+.strong{font-weight:600}
+.cap{font-size:13px;line-height:18px;color:var(--muted)}
+.chev{color:var(--muted)}
+.ask{color:var(--primary);font-weight:600}
+.ask .ico{background:transparent;border:1.5px dashed var(--outline);color:var(--muted)}
+.sw{width:46px;height:28px;border-radius:999px;background:var(--outline);position:relative;flex:none}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--raised)}
+.sw.on{background:var(--primary)}
+.sw.on::after{left:21px;background:var(--onPrimary)}
+.sentence{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
+.sentence:last-child{border-bottom:none}
+.sentence .grow{padding-top:2px}
+.fixed{color:var(--muted)}
+.map{height:150px;border-radius:12px;background:
+  linear-gradient(90deg,transparent 48%,var(--line) 48%,var(--line) 52%,transparent 52%) 0 0/120px 100%,
+  linear-gradient(0deg,transparent 46%,var(--line) 46%,var(--line) 54%,transparent 54%) 0 0/100% 90px,var(--sunken);position:relative;overflow:hidden}
+.map .circle{position:absolute;left:50%;top:50%;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid var(--primary);background:color-mix(in srgb,var(--primary) 15%,transparent)}
+.map .pin{position:absolute;left:50%;top:50%;margin:-26px 0 0 -12px;color:var(--primaryStrong)}
+.map .credit{position:absolute;right:0;bottom:0;font-size:10px;padding:0 4px;background:var(--surface);color:var(--muted);border-top-left-radius:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;background:var(--primarySoft);color:var(--primaryStrong);font-size:13px;font-weight:600}
+.btns{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;height:48px;border-radius:12px;border:none;font:600 16px 'Atkinson Hyperlegible Next';display:flex;align-items:center;justify-content:center}
+.btn.primary{background:var(--primary);color:var(--onPrimary)}
+.btn.soft{background:var(--primarySoft);color:var(--primaryStrong)}
+.btn.quiet{background:transparent;color:var(--primary);border:1px solid var(--outline)}
+.rem{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
+.rem:last-child{border-bottom:none}
+.check{width:24px;height:24px;border-radius:8px;border:2px solid var(--outline);flex:none;margin-top:2px}
+.nudge{background:var(--nudgeSoft);color:var(--nudgeInk);border-radius:18px;padding:14px 16px}
+.nudge .btn.primary{background:var(--nudgeInk);color:var(--nudgeSoft)}
+.nudge .btn.quiet{color:var(--nudgeInk);border-color:var(--nudgeInk)}
+.full{flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:16px}
+.full .big{font:600 28px/34px Lexend,system-ui,sans-serif}
+.full .say{font-size:22px;line-height:30px;font-weight:500}
+.dim{position:absolute;inset:0;background:color-mix(in srgb,var(--ink) 35%,transparent)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:20px 20px 28px}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--outline);margin:0 auto 16px}
+.notif{margin:8px 12px;background:var(--raised);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+.notif .app{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.notes{max-width:880px;background:#FFFBFB;border:1px solid #EBD9DD;border-radius:18px;padding:16px 20px;margin-top:16px}
+.notes li{margin:4px 0}
+.newtag{display:inline-block;font:600 12px/20px 'Atkinson Hyperlegible Next';letter-spacing:.04em;padding:0 8px;border-radius:999px;background:#9C4F67;color:#FFFFFF;vertical-align:3px;margin-left:6px}
+.item{padding:14px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.btn.sm{height:44px;font-size:15px}
+.field{background:var(--raised);border:1.5px solid var(--primary);border-radius:12px;padding:12px 14px;font-size:17px}
+.suggest{background:var(--primarySoft);color:var(--primaryStrong);border-radius:18px;padding:14px 16px}
+.suggest .btn.soft{background:var(--raised)}
+.suggest .btn.quiet{color:var(--primaryStrong);border-color:var(--primaryStrong)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip.off{background:transparent;border:1px solid var(--outline);color:var(--muted)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+  <symbol id="cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></symbol>
+  <symbol id="smile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></symbol>
+  <symbol id="brief" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+  <symbol id="users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></symbol>
+</svg>
+
+<h1 class="page">Places know what they are</h1>
+<p class="intro">Brief 1b, Fix 2. <b>Updated 25 Nov: tasks linked to places.</b> Boards marked <span class="newtag">New</span> or <span class="newtag">Changed</span> are the ones to look at; the rest are as you approved them. Each place has a <b>type</b>, and the type decides what Focus does there, told in plain sentences, each with its own switch. There are no rule builders, and no switch that doesn't fit the place. Light on the left, dark on the right.</p>
+
+<template id="t-list">
+  <div class="status"><span>08:12</span><span>Wed 25 Nov</span></div>
+  <div class="head">
+    <span class="back">‹ Settings</span>
+    <div class="kicker">SETTINGS</div>
+    <h1 class="title">Places</h1>
+    <p class="sub">The places you go all the time. Each one's type decides what Focus does there.</p>
+  </div>
+  <main>
+    <div class="sec">Your key places</div>
+    <div class="card">
+      <div class="row"><div class="ico"><svg><use href="#home"/></svg></div><div class="grow"><div class="strong">Home</div><div class="cap">Notes when you get in and head out. Starts I'm home.</div></div><span class="chev">›</span></div>
+      <div class="row"><div class="ico"><svg><use href="#cart"/></svg></div><div class="grow"><div class="strong">Sainsbury's Sydenham</div><div class="cap">Food shop · offers your shopping list</div></div><span class="chev">›</span></div>
+      <div class="row"><div class="ico"><svg><use href="#smile"/></svg></div><div class="grow"><div class="strong">Sav's nursery</div><div class="cap">Sav's nursery · drop off, pick up, 2 linked tasks, 1 reminder</div></div><span class="chev">›</span></div>
+      <div class="row ask"><div class="ico"><svg><use href="#brief"/></svg></div><div class="grow">Do you work from an office? Where?<div class="cap">Focus shows your meetings and work list when you arrive.</div></div><span class="chev">›</span></div>
+    </div>
+    <div class="sec">Other places</div>
+    <div class="card">
+      <div class="row"><div class="ico"><svg><use href="#users"/></svg></div><div class="grow"><div class="strong">Mum and Dad's</div><div class="cap">Family · reminders only</div></div><span class="chev">›</span></div>
+      <div class="row ask"><div class="ico"><svg><use href="#plus"/></svg></div><div class="grow">Anywhere else you go a lot?<div class="cap">Family, the gym, anywhere.</div></div><span class="chev">›</span></div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="grow"><div class="strong">Any supermarket, not just mine</div><div class="cap">If you're in another supermarket with things on your list, Focus asks once.</div></div><div class="sw"></div></div>
+      <div class="row"><div class="grow"><div class="strong">Places log</div><div class="cap">Every arrival and departure. Stays on this phone.</div></div><span class="chev">›</span></div>
+    </div>
+  </main>
+</template>
+
+<template id="t-nursery">
+  <div class="status"><span>08:12</span><span>Wed 25 Nov</span></div>
+  <div class="head">
+    <span class="back">‹ Places</span>
+    <div class="kicker">PLACES</div>
+    <h1 class="title">Sav's nursery</h1>
+    <p class="sub">Elmers End · <span class="chip"><svg width="14" height="14"><use href="#smile"/></svg>Sav's nursery</span></p>
+  </div>
+  <main>
+    <div class="map"><div class="circle"></div><svg class="pin" width="24" height="26"><use href="#pin"/></svg><span class="credit">© OpenStreetMap contributors</span></div>
+    <div class="sec">What Focus does here</div>
+    <div class="card">
+      <div class="sentence"><div class="grow">Drop off by <b>08:30</b>, pick up at <b>17:30</b>. Focus works out when to leave, with live traffic.</div><div class="sw on"></div></div>
+      <div class="sentence"><div class="grow">When you arrive at Sav's nursery, Focus will show you anything you need to tell them.</div><div class="sw on"></div></div>
+      <div class="sentence"><div class="grow">Any tasks linked here, Focus asks about when you arrive.</div><div class="sw on"></div></div>
+      <div class="sentence fixed"><div class="grow cap">Arrivals and departures always go in the Places log.</div></div>
+    </div>
+    <div class="sec">Tasks linked here</div>
+    <div class="card">
+      <div class="rem"><div class="ico"><svg><use href="#smile"/></svg></div><div class="grow"><div class="strong">Drop Sav off</div><div class="cap">Weekdays, by 08:30</div></div><span class="chev">›</span></div>
+      <div class="rem"><div class="ico"><svg><use href="#smile"/></svg></div><div class="grow"><div class="strong">Pick Sav up</div><div class="cap">Weekdays, 17:30</div></div><span class="chev">›</span></div>
+      <div class="rem ask"><div class="ico"><svg><use href="#plus"/></svg></div><div class="grow">Link a task to here<div class="cap">Focus asks about it when you arrive. It never ticks it off by itself.</div></div></div>
+    </div>
+    <div class="sec">Reminders for here</div>
+    <div class="card">
+      <div class="rem"><div class="check"></div><div class="grow"><div class="strong">Tell staff Sav will be in late on Friday</div><div class="cap">Next time you arrive, before Fri 27 Nov · once</div></div></div>
+      <div class="rem ask"><div class="ico"><svg><use href="#plus"/></svg></div><div class="grow">Add a reminder for here<div class="cap">Or just say it anywhere: "I need to tell nursery…"</div></div></div>
+    </div>
+    <div class="cap" style="text-align:center">Change the address, type or circle</div>
+  </main>
+</template>
+
+<template id="t-work">
+  <div class="status"><span>08:12</span><span>Wed 25 Nov</span></div>
+  <div class="head">
+    <span class="back">‹ Places</span>
+    <div class="kicker">PLACES</div>
+    <h1 class="title">Office</h1>
+    <p class="sub">Your office · <span class="chip"><svg width="14" height="14"><use href="#brief"/></svg>Work</span></p>
+  </div>
+  <main>
+    <div class="sec">What Focus does here</div>
+    <div class="card">
+      <div class="sentence"><div class="grow">When you arrive at the office, Focus shows today's meetings, your work list and when to leave for pick up.</div><div class="sw on"></div></div>
+      <div class="sentence"><div class="grow">When you arrive, Focus shows any reminders for here.</div><div class="sw on"></div></div>
+      <div class="sentence fixed"><div class="grow cap">Arrivals and departures always go in the Places log.</div></div>
+    </div>
+    <div class="sec">The other types, for comparison</div>
+    <div class="card pad cap" style="display:flex;flex-direction:column;gap:10px">
+      <div><b>Home:</b> "When you get home, Focus starts your I'm home routine." No shopping list when you leave.</div>
+      <div><b>Food shop:</b> "When you arrive, Focus asks if you want your shopping list, if there's anything on it."</div>
+      <div><b>Child's nursery or school:</b> drop off and pick up with leave by times, reminders for here, and "Any tasks linked here, Focus asks about when you arrive."</div>
+      <div><b>Family:</b> "When you arrive, Focus shows any reminders for here."</div>
+      <div><b>Gym:</b> "When you're here, Focus ticks off your gym task." Plus reminders.</div>
+      <div><b>Other:</b> reminders, and "Any tasks linked here, Focus asks about when you arrive."</div>
+    </div>
+  </main>
+</template>
+
+<template id="t-workcard">
+  <div class="status"><span>09:02</span><span>Thu 26 Nov</span></div>
+  <div class="head">
+    <div class="kicker">THURSDAY 26 NOVEMBER</div>
+    <h1 class="title">At work</h1>
+    <p class="sub">You got in at 08:58.</p>
+  </div>
+  <main>
+    <div class="card pad">
+      <div class="sec" style="margin:0 0 8px">Today's meetings</div>
+      <div class="row" style="min-height:44px"><div class="grow">Team catch-up</div><span class="cap">10:00</span></div>
+      <div class="row" style="min-height:44px"><div class="grow">Budget review</div><span class="cap">14:30</span></div>
+    </div>
+    <div class="card pad">
+      <div class="sec" style="margin:0 0 8px">Work to do</div>
+      <div class="rem" style="padding:8px 0"><div class="check"></div><div class="grow">Send the November report</div></div>
+      <div class="rem" style="padding:8px 0"><div class="check"></div><div class="grow">Reply to the supplier</div></div>
+    </div>
+    <div class="nudge"><div class="strong">Leave by 16:55 for pick up</div><div class="cap" style="color:var(--nudgeInk)">Sav's nursery at 17:30. Focus checks traffic from 15:55.</div></div>
+  </main>
+</template>
+
+<template id="t-checkin">
+  <div class="status"><span>21:40</span><span>Wed 25 Nov</span></div>
+  <div class="head">
+    <div class="kicker">TALK IT THROUGH</div>
+    <h1 class="title">What's on your mind?</h1>
+  </div>
+  <main>
+    <div class="card pad" style="color:var(--muted)"><svg width="16" height="16" style="vertical-align:-3px"><use href="#mic"/></svg> "…and Sav's going in late on Friday, I need to tell nursery."</div>
+  </main>
+  <div class="dim"></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="tag" style="color:var(--muted)">A reminder for a place</div>
+    <div style="font:600 18px/24px Lexend,system-ui,sans-serif;margin-bottom:8px">When you arrive at Sav's nursery, remind you to tell staff Sav will be in late on Friday.</div>
+    <div class="cap">You're there tomorrow morning for drop off, so it'll come up then.</div>
+    <div class="btns"><span class="btn primary">Yes</span><span class="btn soft">Change it</span><span class="btn quiet">No</span></div>
+  </div>
+</template>
+
+<template id="t-linktask">
+  <div class="status"><span>20:15</span><span>Wed 25 Nov</span></div>
+  <div class="head">
+    <span class="back">‹ Today</span>
+    <div class="kicker">NEW TASK</div>
+    <h1 class="title">Add a task</h1>
+  </div>
+  <main>
+    <div class="field">Drop Sav to nursery</div>
+    <div class="chips"><span class="chip">Weekdays</span><span class="chip">By 08:30</span><span class="chip off">Sav's space</span></div>
+    <div class="suggest">
+      <div class="strong" style="font-size:18px;line-height:24px">Link this to Sav's nursery?</div>
+      <div style="margin-top:4px">Focus will ask when you arrive.</div>
+      <div class="btns"><span class="btn primary">Yes</span><span class="btn soft">Change</span><span class="btn quiet">No</span></div>
+    </div>
+    <div class="cap">Change lets you pick another of your places. The link stays on this phone.</div>
+    <span class="btn primary" style="flex:none">Save</span>
+  </main>
+</template>
+
+<template id="t-arrive">
+  <div class="status"><span>08:24</span><span>Thu 26 Nov</span></div>
+  <div class="full" style="justify-content:flex-start;padding-top:40px">
+    <div class="kicker" style="margin:0">YOU'RE AT SAV'S NURSERY · 08:24</div>
+    <div class="card pad">
+      <div class="say">Have you dropped Sav off?</div>
+      <div class="cap">Drop Sav off · weekdays, by 08:30</div>
+      <div class="btns"><span class="btn primary sm">Done</span><span class="btn soft sm">Not yet</span><span class="btn quiet sm">Not today</span></div>
+    </div>
+    <div class="card pad">
+      <div class="tag" style="color:var(--muted);margin-bottom:4px">Also for here</div>
+      <div class="say">Tell staff Sav will be in late on Friday.</div>
+      <div class="cap">You asked for this last night.</div>
+      <div class="btns"><span class="btn primary sm">Done, I told them</span><span class="btn quiet sm">Not now</span></div>
+    </div>
+    <div class="cap" style="text-align:center">Done ticks it off at 08:24, when you got here.</div>
+  </div>
+</template>
+
+<template id="t-after">
+  <div class="status"><span>08:41</span><span>Thu 26 Nov</span></div>
+  <div class="notif">
+    <div class="app"><svg width="12" height="12"><use href="#pin"/></svg>Focus · now</div>
+    <div class="strong">Did you drop Sav off and tell them about Friday?</div>
+    <div class="cap" style="color:var(--ink)">Tap to tick off either one.</div>
+    <div style="display:flex;gap:16px;margin-top:8px" class="ask"><span>Yes, both</span><span>Open</span></div>
+  </div>
+  <div class="cap" style="padding:0 20px">If only one was open, it asks about that one: "Did you drop Sav off?" or "Did you tell them?". Just once, nothing after.</div>
+  <main style="margin-top:24px">
+    <div class="tag" style="color:var(--muted)">If you won't be at nursery before Friday</div>
+    <div class="nudge">
+      <div class="strong">You're not at nursery again before Friday.</div>
+      <div>Phone or message them about Sav being in late instead?</div>
+      <div class="btns"><span class="btn primary">Draft a message</span><span class="btn quiet">Already done</span></div>
+      <div class="cap" style="color:var(--nudgeInk);margin-top:8px">Focus writes it, you send it.</div>
+    </div>
+  </main>
+</template>
+
+<script>
+const CH = '<span class="newtag">Changed</span>', NEW = '<span class="newtag">New</span>';
+const boards = [
+  ['t-list', 'Places list' + CH, 'Key places first, asked for one type at a time. Missing ones show as a gentle question, not a gap. The "any supermarket" setting is off by default. The nursery row now counts its linked tasks.'],
+  ['t-nursery', "A place's screen: Sav's nursery" + CH, 'Plain sentences, each with its own switch, and only the ones that fit a nursery. New: "Tasks linked here" sits above "Reminders for here".'],
+  ['t-work', 'Same screen, a work place' + CH, "A different type gets different sentences. Underneath, for you to check, is what each other type says. Child's nursery and Other now ask about linked tasks."],
+  ['t-linktask', 'Linking a task to a place' + NEW, 'When a task names one of your saved places, Focus suggests the link. Yes, Change (pick another place) or No. Nothing is linked without a yes.'],
+  ['t-workcard', 'Arriving at work: the work routine card', "Today's meetings from your calendar, your work list, and when to leave for the next fixed thing. Nothing else for now (places to eat nearby is parked for Focus 5.0)."],
+  ['t-checkin', 'Making a place reminder by talking', 'Focus spots that it belongs to a place and asks first: Yes, Change it or No. Nothing is added without a yes.'],
+  ['t-arrive', "Arriving: linked tasks and reminders on one card" + CH, 'Full screen on arriving, one card per arrival. The linked task comes first (Done, Not yet, Not today, which is the same as Skip today), then the place reminder. Done ticks the task with the arrival time from the Places log. Focus never ticks it off by itself.'],
+  ['t-after', 'If it wasn’t answered, and the day-before warning' + CH, 'Leaving without answering brings one nudge covering everything still open, never more. If you won’t be there before the day a reminder is about, Focus warns you the day before.'],
+];
+for (const [id, title, about] of boards) {
+  const b = document.createElement('section'); b.className = 'board';
+  b.innerHTML = `<h2>${title}</h2><p>${about}</p><div class="pair"></div>`;
+  for (const mode of ['light', 'dark']) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<div class="tag">${mode}</div>`;
+    const p = document.createElement('div'); p.className = `phone ${mode}`;
+    p.appendChild(document.getElementById(id).content.cloneNode(true));
+    wrap.appendChild(p); b.querySelector('.pair').appendChild(wrap);
+  }
+  document.body.appendChild(b);
+}
+const notes = document.createElement('div'); notes.className = 'notes';
+notes.innerHTML = `<b>Decisions for you (linked tasks)</b><ul>
+<li><b>Not yet:</b> I've drawn it as waiting for the leaving nudge. Or should Focus ask once more after 10 minutes if you're still there?</li>
+<li><b>Which types take linked tasks:</b> Child's nursery and Other, as you asked. Work and Family could take them too (for example "Take Mum's dish back" as a task rather than a reminder). Add them, or keep it to the two?</li>
+<li><b>Suggesting the link:</b> Focus suggests it when a task names a saved place, in Add a task, a dump or wind down. Should it also offer links for your existing tasks once, the first time?</li>
+<li><b>Pick up:</b> it's a linked task too, so arriving at 17:25 asks "Have you picked Sav up?". Or should pick up be ticked when you leave the nursery instead?</li>
+</ul>
+<b>Already decided (built)</b><ul>
+<li>Home has no switch for the log (always on). Reminders go off full screen. The nudge comes as you leave. The work routine is its own screen.</li>
+</ul>`;
+document.body.appendChild(notes);
+</script>
+</body>
+</html>

@@ -15,6 +15,8 @@ import { TaskRow } from '../../components/TaskRow';
 import { Button, Card, Chip, IconButton, Screen, Section, T } from '../../components/ui';
 import { clearLastCrash, readLastCrash } from '../../lib/crash';
 import { calendarAllowed, checkDiary, type DiaryCheck, useDiary } from '../../lib/calendar';
+import { allDayEvents } from '../../lib/dumpContext';
+import { GrabListCards } from '../../components/GrabListCard';
 import { useNow, useStore } from '../../lib/store';
 import { radius, space, useColors } from '../../theme';
 import { agendaFor, dayKey, fmtTime, slug, tasksFor, wakeFor, isDoneOn } from '../../lib/time';
@@ -40,7 +42,9 @@ function TodayList() {
 
   const [refresh, setRefresh] = useState(0);
   useFocusEffect(useCallback(() => setRefresh((r) => r + 1), []));
-  const { events, allowed } = useDiary(state.settings.readCalendar, 2, refresh);
+  const { events: phoneEvents, allowed } = useDiary(state.settings.readCalendar, 2, refresh);
+  // Her phone diary plus Focus's own whole-day entries (her child with someone for the day).
+  const events = [...phoneEvents, ...allDayEvents(state.tasks)];
   const [diary, setDiary] = useState<DiaryCheck | null>(null);
   const [crash, setCrash] = useState<{ at: string; text: string } | null>(null);
   useEffect(() => {
@@ -74,6 +78,8 @@ function TodayList() {
         </View>
         <IconButton name="settings" label="Settings" tone="quiet" onPress={() => router.navigate('/settings')} />
       </View>
+
+      <GrabListCards />
 
       {!user && (
         <View style={{ gap: space[2] }}>

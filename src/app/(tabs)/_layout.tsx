@@ -74,6 +74,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="place/[id]" options={hidden} />
       <Tabs.Screen name="places-log" options={hidden} />
       <Tabs.Screen name="permissions" options={hidden} />
+      <Tabs.Screen name="place-reminder/[id]" options={hidden} />
+      <Tabs.Screen name="work/[id]" options={hidden} />
       <Tabs.Screen name="note" options={hidden} />
       <Tabs.Screen name="tablet-settings" options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />
       <Tabs.Screen name="comeup"options={dash ? { ...hidden, tabBarStyle: { display: 'none' } } : hidden} />

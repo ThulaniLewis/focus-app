@@ -8,6 +8,8 @@ export type ParsedItem = {
   room?: string; // room slug
   grab?: { item: string; fromRoom: string };
   at?: string;
+  /** A diary event for the whole day, no time: `day` is set, `at` is not. */
+  allDay?: boolean;
   /** Tasks for a particular day. */
   day?: string;
   /** A real deadline. */
@@ -42,8 +44,11 @@ export function normalise(input: any, settings: Settings, spaces: Space[]): Pars
   for (const raw of Array.isArray(input?.items) ? input.items : []) {
     if (!raw || typeof raw.title !== 'string' || !raw.title.trim()) continue;
     const at = typeof raw.at === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw.at) ? raw.at.slice(0, 16) : undefined;
-    let kind: ParsedItem['kind'] = raw.kind === 'buy' ? 'buy' : raw.kind === 'note' ? 'note' : at ? 'event' : 'task';
-    if (kind === 'event' && !at) kind = 'task';
+    const dayOnly = typeof raw.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : undefined;
+    // A whole-day diary event (her child with someone for the day): a day, no time, no tick box.
+    const allDay = raw.kind === 'event' && !at && raw.all_day === true && !!dayOnly;
+    let kind: ParsedItem['kind'] = raw.kind === 'buy' ? 'buy' : raw.kind === 'note' ? 'note' : at || allDay ? 'event' : 'task';
+    if (kind === 'event' && !at && !allDay) kind = 'task';
     const fromRoom = fixRoom(raw.grab?.from_room);
     let spaceId: string | undefined = typeof raw.space_id === 'string' && spaceIds.has(raw.space_id) ? raw.space_id : undefined;
     const room = kind === 'task' ? fixRoom(raw.room) : undefined;
@@ -69,7 +74,8 @@ export function normalise(input: any, settings: Settings, spaces: Space[]): Pars
       room,
       grab: kind === 'task' && fromRoom && typeof raw.grab?.item === 'string' ? { item: raw.grab.item, fromRoom } : undefined,
       at: kind === 'event' ? at : undefined,
-      day: kind === 'task' && typeof raw.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : undefined,
+      ...(allDay ? { allDay: true } : {}),
+      day: kind === 'task' || allDay ? dayOnly : undefined,
       dueAt: kind === 'task' && typeof raw.due === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw.due) ? raw.due.slice(0, 16) : undefined,
       dueDay: kind === 'task' && typeof raw.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.due) ? raw.due : undefined,
       repeatDays:

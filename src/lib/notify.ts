@@ -76,6 +76,8 @@ export async function askExactAlarms(): Promise<void> {
 
 /** Kitchen timers are scheduled separately and survive re-planning the nudges. */
 export const TIMER_PREFIX = 'timer-';
+/** Place reminder warnings (the day before), made by location.ts. Not nudges, so the nudge plan leaves them alone. */
+export const PLACE_WARN_PREFIX = 'place-warn-';
 
 /** The room round check-in, on the device running the round (the tablet too). Also survives re-planning. */
 const ROUND_CHECK_IN = 'round-checkin';
@@ -83,7 +85,7 @@ const ROUND_CHECK_IN = 'round-checkin';
 async function cancelNudges() {
   const all = await Notifications.getAllScheduledNotificationsAsync();
   for (const n of all)
-    if (!n.identifier.startsWith(TIMER_PREFIX) && n.identifier !== ROUND_CHECK_IN) await Notifications.cancelScheduledNotificationAsync(n.identifier);
+    if (!n.identifier.startsWith(TIMER_PREFIX) && !n.identifier.startsWith(PLACE_WARN_PREFIX) && n.identifier !== ROUND_CHECK_IN) await Notifications.cancelScheduledNotificationAsync(n.identifier);
 }
 
 /** "Still on the kitchen? Tap to stop or keep going." Gentle, once, replacing any earlier one. */

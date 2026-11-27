@@ -7,7 +7,7 @@ Things that live in the native app, so an over-the-air update can't change them.
 - [x] **Version bumped to 0.8.0** in `app.json` (`runtimeVersion` follows it, policy appVersion). Builds on 0.7.0 won't get Stage A over the air.
 - [x] **Android permissions** added: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION` (plus the existing `USE_FULL_SCREEN_INTENT`, `POST_NOTIFICATIONS`). `expo-location` foreground service switched on.
 - [x] **Native code** in `modules/focus-alarm`: `showPlacePopup` (the full screen "shopping list?" at the shop) and `batteryUnrestricted` (for the setup checklist).
-- [ ] **Supabase**: deploy the new `focus-places` Edge Function (`supabase functions deploy focus-places`). It uses the existing `ALLOWED_EMAILS` secret; no new secrets.
+- [x] **Supabase**: deployed the new `focus-places` Edge Function (25 Nov) (`supabase functions deploy focus-places`). It uses the existing `ALLOWED_EMAILS` secret; no new secrets.
 
 ## From Stage 0: dusty rose outside the JS
 

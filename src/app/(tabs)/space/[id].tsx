@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Icon } from '../../../components/Icon';
+import { useLinkOffer } from '../../../components/LinkedTasks';
 import { TaskRow } from '../../../components/TaskRow';
 import { Card, Check, Chip, Header, IconButton, Screen, Section, T } from '../../../components/ui';
 import { useNow, useStore } from '../../../lib/store';
@@ -75,6 +76,7 @@ function TaskList({ tasks, empty, showRoom = true }: { tasks: Task[]; empty: str
 /** Built to "Job search: ordered list and deadlines": real dates only at the top, then the next list. */
 function GeneralSpace({ sp }: { sp: Space }) {
   const { state, addItems } = useStore();
+  const link = useLinkOffer(state);
   const c = useColors();
   const now = useNow(60000);
   const v = spaceView(state.tasks.filter((t) => t.spaceId === sp.id), now);
@@ -108,7 +110,8 @@ function GeneralSpace({ sp }: { sp: Space }) {
       )}
       <T v="label" muted style={hasDates ? { marginTop: space[2] } : undefined}>Next, in order. Never late</T>
       <TaskList tasks={v.next} empty="Nothing open here. Dump something and Focus will put it in the right place." />
-      <QuickAdd placeholder={`Add to ${sp.name}`} onAdd={(title) => addItems([{ title, kind: 'task', spaceId: sp.id }])} />
+      <QuickAdd placeholder={`Add to ${sp.name}`} onAdd={(title) => link.check(addItems([{ title, kind: 'task', spaceId: sp.id }])[0], title)} />
+      {link.node}
       {v.someday.length > 0 && (
         <Section title="Someday">
           <TaskList tasks={v.someday} empty="" />
@@ -125,6 +128,7 @@ function GeneralSpace({ sp }: { sp: Space }) {
 
 function HomeSpace({ sp }: { sp: Space }) {
   const { state, addItems } = useStore();
+  const link = useLinkOffer(state);
   const c = useColors();
   const floors = roomsByFloor(state.settings.rooms);
   const loose = state.tasks.filter((t) => t.spaceId === sp.id && !t.done && !t.at && !t.room && !t.someday && !t.seed?.startsWith('safety'));
@@ -156,7 +160,8 @@ function HomeSpace({ sp }: { sp: Space }) {
       {floor('Downstairs', floors.down)}
       {floor('Other rooms', floors.other)}
       <Section title="Around the house">
-        <QuickAdd placeholder="Add a house job" onAdd={(title) => addItems([{ title, kind: 'task', spaceId: sp.id }])} />
+        <QuickAdd placeholder="Add a house job" onAdd={(title) => link.check(addItems([{ title, kind: 'task', spaceId: sp.id }])[0], title)} />
+        {link.node}
         <TaskList tasks={loose} empty="Nothing that isn't tied to a room." />
       </Section>
       {projects.length > 0 && (

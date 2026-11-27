@@ -47,9 +47,13 @@ type Ctx = {
   undo: () => void;
   /** Adds to the dev report's log. Not undoable, never synced. */
   logEvent: (ev: DevEvent) => void;
-  addItems: (items: ParsedItem[]) => void;
+  /** Adds them and hands back the new tasks' ids, in the same order. */
+  addItems: (items: ParsedItem[]) => string[];
   addNotes: (notes: string[]) => void;
-  toggleDone: (taskId: string, day?: string) => void;
+  /** at: when it was really done (a linked task ticked with the arrival time). */
+  toggleDone: (taskId: string, day?: string, at?: string) => void;
+  /** Skip a repeating task for one day ("Not today"). */
+  skipDay: (taskId: string, day: string) => void;
   /** Pause a task's nudges for a while. */
   snooze: (taskId: string, minutes: number) => void;
   /** Set what comes first on a day, and what's paused. */
@@ -317,6 +321,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               room: p.room,
               grab: p.grab,
               at: p.at,
+              ...(p.allDay ? { allDay: true } : {}),
               repeatDays: p.repeatDays?.length ? p.repeatDays : undefined,
               place: p.place,
               estimateMin: p.estimateMin,
@@ -327,6 +332,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               done: false,
             }));
         change(`Added ${items.length}`, (s) => ({ ...s, tasks: [...s.tasks, ...added] }));
+        const ids = added.map((t) => t.id);
         // Copy one-off fixed times into the phone's calendar (not undoable, so done after).
         if (latest.current.settings.writeCalendar) {
           for (const t of added) {
@@ -339,6 +345,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             });
           }
         }
+        return ids;
       },
       addNotes(notes) {
         if (!notes.length) return;
@@ -347,7 +354,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           notes: [...notes.map((text) => ({ id: id(), text, createdAt: nowISO() })), ...s.notes],
         }));
       },
-      toggleDone(taskId, day) {
+      skipDay(taskId, day) {
+        change('Skipped today', mapTask(taskId, (t) => (t.repeatDays?.length ? { ...t, skipDays: [...new Set([...(t.skipDays ?? []), day])] } : t)));
+      },
+      toggleDone(taskId, day, at) {
         change('Ticked', (s) => {
           const ticked = mapTask(taskId, (t) => {
             if (t.repeatDays?.length && day) {
@@ -358,9 +368,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             // Ticking a running timer stops it and keeps the time.
             if (done && t.timer) {
               const sec = elapsedSec(t.timer, new Date());
-              return { ...t, done, doneAt: nowISO(), timer: undefined, actualMin: Math.max(1, Math.round(sec / 60)) };
+              return { ...t, done, doneAt: at ?? nowISO(), timer: undefined, actualMin: Math.max(1, Math.round(sec / 60)) };
             }
-            return { ...t, done, doneAt: done ? nowISO() : undefined };
+            return { ...t, done, doneAt: done ? (at ?? nowISO()) : undefined };
           })(s);
           // On time or late: a fixed time with a place asks "how did it go?" on this device.
           const t = ticked.tasks.find((x) => x.id === taskId);

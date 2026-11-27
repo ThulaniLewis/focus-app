@@ -3,7 +3,9 @@
 // and the app both read and write it, one change at a time.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
-import { EMPTY_GEO, type GeoData, type GeoPlace, parseGeo } from './geo';
+import { EMPTY_GEO, type GeoData, type GeoPlace, parseGeo, type PlaceReminder } from './geo';
+import type { SuggestedAway, SuggestedGrabList } from './dumpShapes';
+import { newGrabList, tickGrabItem } from './grabLists';
 
 export const GEO_KEY = 'focus.places.v1';
 
@@ -47,12 +49,85 @@ export function updateGeo(fn: (d: GeoData) => GeoData): Promise<GeoData> {
   return run;
 }
 
+const where = (p: GeoPlace) => `${p.id}|${p.lat}|${p.lon}|${p.radiusM}`;
+
 /**
- * Save the list of places. Where she is starts fresh (Focus has another first look), so adding home
- * while standing in it doesn't log an arrival she didn't make.
+ * Save the list of places. If a circle moved (or a place came or went), where she is starts fresh
+ * (Focus has another first look), so adding home while standing in it doesn't log an arrival she
+ * didn't make. Changing a switch or a name keeps it. Reminders for a deleted place go with it.
  */
 export const setPlaces = (places: GeoPlace[]) =>
-  updateGeo((d) => ({ ...d, places, presence: { placeId: null, since: null, pending: null } }));
+  updateGeo((d) => {
+    const moved = d.places.map(where).sort().join() !== places.map(where).sort().join();
+    const ids = new Set(places.map((p) => p.id));
+    return {
+      ...d,
+      places,
+      reminders: d.reminders.filter((r) => ids.has(r.placeId)),
+      links: d.links.filter((l) => ids.has(l.placeId)),
+      ...(moved ? { presence: { placeId: null, since: null, pending: null } } : {}),
+    };
+  });
+
+const newId = () => `rem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+
+/** Add a place reminder (after her yes). */
+export const addReminder = (r: Omit<PlaceReminder, 'id' | 'createdAt'>) =>
+  updateGeo((d) => ({ ...d, reminders: [...d.reminders, { ...r, id: newId(), createdAt: new Date().toISOString() }] }));
+
+/** Done (or not done) with a reminder. */
+export const setReminderDone = (id: string, done: boolean) =>
+  updateGeo((d) => ({
+    ...d,
+    reminders: d.reminders.map((r) => {
+      if (r.id !== id) return r;
+      const { doneAt, ...rest } = r;
+      return done ? { ...rest, doneAt: new Date().toISOString() } : rest;
+    }),
+  }));
+
+export const deleteReminder = (id: string) => updateGeo((d) => ({ ...d, reminders: d.reminders.filter((r) => r.id !== id) }));
+
+/** Link a task to a place (after her yes). A task has one place: a new link replaces the old. */
+export const linkTask = (taskId: string, placeId: string) =>
+  updateGeo((d) => ({ ...d, links: [...d.links.filter((l) => l.taskId !== taskId), { taskId, placeId, createdAt: new Date().toISOString() }] }));
+
+export const unlinkTask = (taskId: string) => updateGeo((d) => ({ ...d, links: d.links.filter((l) => l.taskId !== taskId) }));
+
+/** Not yet (the leaving nudge still comes) or Not today (not asked again that day). Done is a tick on the task itself. */
+export const answerLink = (taskId: string, answer: 'not-yet' | 'not-today', day: string) =>
+  updateGeo((d) => ({
+    ...d,
+    links: d.links.map((l) => (l.taskId !== taskId ? l : answer === 'not-yet' ? { ...l, notYetAt: new Date().toISOString() } : { ...l, notToday: day })),
+  }));
+
+/** "Not for me" on a key place question, or ask again. */
+/** Grab lists (brief 4). */
+export const addGrabList = (s: SuggestedGrabList) => updateGeo((d) => ({ ...d, grabLists: [...d.grabLists.filter((g) => !g.closedAt).slice(-9), newGrabList(s, new Date())] }));
+export const tickGrab = (listId: string, itemId: string) =>
+  updateGeo((d) => ({ ...d, grabLists: d.grabLists.map((g) => (g.id === listId ? tickGrabItem(g, itemId, new Date()) : g)) }));
+/** Done (or close it): it leaves nothing behind on Today. */
+export const closeGrabList = (listId: string) =>
+  updateGeo((d) => ({ ...d, grabLists: d.grabLists.map((g) => (g.id === listId ? { ...g, closedAt: new Date().toISOString() } : g)) }));
+
+/** Away from home (brief 4). Null ends it. */
+export const setAway = (a: SuggestedAway | null) =>
+  updateGeo((d) => ({ ...d, away: a ? { ...a, since: new Date().toISOString() } : d.away ? { ...d.away, endedAt: new Date().toISOString() } : null }));
+
+export const skipType = (type: GeoPlace['type'], skip: boolean) =>
+  updateGeo((d) => ({ ...d, skipped: skip ? [...new Set([...(d.skipped ?? []), type])] : (d.skipped ?? []).filter((x) => x !== type) }));
+
+export const setAnySupermarket = (on: boolean) => updateGeo((d) => ({ ...d, anySupermarket: on, still: null }));
+
+/** The gym ticks waiting for the app, handed over once. */
+export async function takeTicks(): Promise<{ taskId: string; day: string }[]> {
+  let out: { taskId: string; day: string }[] = [];
+  await updateGeo((d) => {
+    out = d.ticks;
+    return d.ticks.length ? { ...d, ticks: [] } : d;
+  });
+  return out;
+}
 
 const subscribe = (l: () => void) => {
   listeners.add(l);

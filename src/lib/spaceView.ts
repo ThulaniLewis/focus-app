@@ -59,6 +59,13 @@ export function spaceView(tasks: Task[], now: Date) {
       return { task, label: `${dayKey(d) === today ? 'Today' : `${d.getDate()} ${MONTHS[d.getMonth()]}`} ${fmtTime(d)}` };
     });
 
+  // Whole-day diary entries (her child with someone for the day): shown with their day, never ticked.
+  for (const task of open.filter((t) => t.kind === 'event' && t.allDay && t.day && t.day >= today).sort((a, b) => a.day!.localeCompare(b.day!))) {
+    const [y, m, d] = task.day!.split('-').map(Number);
+    dated.push({ task, label: `${task.day === today ? 'Today' : `${d} ${MONTHS[m - 1]}`}, all day` });
+    void y;
+  }
+
   // Repeating things at a real time, labelled by their days so two "Cook dinner"s read apart.
   const weekly: Weekly[] = open
     .filter((t) => t.at && !t.flex && t.repeatDays?.length)
@@ -69,7 +76,7 @@ export function spaceView(tasks: Task[], now: Date) {
   const shown = new Set([...deadlines, ...dated, ...weekly].map((x) => x.task.id));
   const slot = (t: Task) => (t.at ? t.at.slice(11, 16) : '99:99');
   const next = tasks
-    .filter((t) => !shown.has(t.id) && !t.someday && (t.repeatDays?.length ? !isDoneOn(t, today) : !t.done))
+    .filter((t) => !shown.has(t.id) && !t.someday && !(t.kind === 'event' && t.allDay) && (t.repeatDays?.length ? !isDoneOn(t, today) : !t.done))
     // The planned order: a flexible job's old slot only orders it, it's never shown.
     .sort((a, b) => slot(a).localeCompare(slot(b)) || a.createdAt.localeCompare(b.createdAt));
   const someday = open.filter((t) => t.someday && !shown.has(t.id));

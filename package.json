@@ -50,7 +50,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --import ./tests/tz.ts --test tests/time.test.ts tests/roomLink.test.ts tests/leftovers.test.ts tests/marks.test.ts tests/highlight.test.ts tests/sync.test.ts tests/roomMode.test.ts tests/comeUp.test.ts tests/punctuality.test.ts tests/sleep.test.ts tests/theme.test.ts tests/features.test.ts tests/look.test.ts tests/stage1.test.ts tests/fixes.test.ts tests/places.test.ts",
+    "test": "tsx --import ./tests/tz.ts --test tests/time.test.ts tests/roomLink.test.ts tests/leftovers.test.ts tests/marks.test.ts tests/highlight.test.ts tests/sync.test.ts tests/roomMode.test.ts tests/comeUp.test.ts tests/punctuality.test.ts tests/sleep.test.ts tests/theme.test.ts tests/features.test.ts tests/look.test.ts tests/stage1.test.ts tests/fixes.test.ts tests/places.test.ts tests/placeKinds.test.ts tests/placeLinks.test.ts tests/dumpUnderstanding.test.ts",
     "theme": "tsx scripts/gen-theme.ts",
     "lint": "expo lint"
   },

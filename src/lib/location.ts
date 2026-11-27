@@ -14,10 +14,13 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { FocusAlarm } from '../../modules/focus-alarm';
 import { colors } from '../theme';
-import { type Fix, type FenceEvent, type GeoData, type GeoLogEntry, type GeoPlace, mergeShopping, noticesFor, observe, type PlaceNotice, shoppingItems, shoppingSpaceId } from './geo';
+import { countLookup, type Fix, type FenceEvent, type GeoData, type GeoLogEntry, type GeoPlace, mergeShopping, type NoticeOpen, observe, placeActions, type PlaceNotice, shoppingItems, shoppingSpaceId, stillCheck, warnAt } from './geo';
+import { linkedDue } from './placeLinks';
+import { does } from './placeTypes';
+import { dayKey } from './time';
 import { loadGeo, updateGeo } from './geoStore';
 import { migrate, STATE_KEY } from './migrate';
-import { CHANNEL } from './notify';
+import { CHANNEL, PLACE_WARN_PREFIX } from './notify';
 import { configured, supabase } from './supabase';
 
 export const FENCE_TASK = 'focus-places-fence';
@@ -39,21 +42,29 @@ const UPDATE_OPTIONS: Location.LocationTaskOptions = {
   },
 };
 
-/** One observation in: move the state on, then send anything the place rules ask for. */
+/** One observation in: move the state on, then do whatever the places' types ask for. */
 export async function handleObservation(obs: Fix | FenceEvent): Promise<GeoLogEntry[]> {
   let events: GeoLogEntry[] = [];
+  let lookUp: { lat: number; lon: number } | null = null;
   const data = await updateGeo((d) => {
     const r = observe(d, obs);
     events = r.events;
-    return r.data;
+    if (obs.source === 'geofence') return r.data;
+    const s = stillCheck(r.data, obs);
+    if (s.lookUp) lookUp = { lat: obs.lat, lon: obs.lon };
+    const still = s.still ?? null;
+    return still === (r.data.still ?? null) ? r.data : { ...r.data, still };
   });
-  if (events.length) await sendNotices(events, data).catch(() => {});
+  if (events.length) await act(events, data).catch(() => {});
+  if (lookUp) await lookForSupermarket(lookUp).catch(() => {});
   return events;
 }
 
 /** The list on this phone, topped up from the server if it can be reached quickly. */
+const phoneState = async () => migrate(JSON.parse((await AsyncStorage.getItem(STATE_KEY)) ?? 'null'));
+
 async function shoppingNow(): Promise<{ items: string[]; spaceId?: string }> {
-  const state = migrate(JSON.parse((await AsyncStorage.getItem(STATE_KEY)) ?? 'null'));
+  const state = await phoneState();
   const spaceId = shoppingSpaceId(state);
   if (!spaceId) return { items: [] };
   const local = shoppingItems(state);
@@ -72,23 +83,88 @@ async function shoppingNow(): Promise<{ items: string[]; spaceId?: string }> {
   return { items: mergeShopping(local, remote), spaceId };
 }
 
-async function sendNotices(events: GeoLogEntry[], data: GeoData) {
-  const wanted = events.some((e) => data.places.find((p) => p.id === e.placeId)?.rules.some((r) => r.when === e.event));
-  if (!wanted) return;
-  const { items, spaceId } = await shoppingNow();
-  for (const n of noticesFor(events, data.places, items, new Date())) await show(n, spaceId);
+async function act(events: GeoLogEntry[], data: GeoData) {
+  // Only fetch the shopping list when arriving somewhere that offers it.
+  const needsList = events.some((e) => e.event === 'arrive' && does(data.places.find((p) => p.id === e.placeId) ?? { type: 'other' }, 'offer-shopping-list'));
+  const { items, spaceId } = needsList ? await shoppingNow() : { items: [] as string[], spaceId: undefined };
+  // Linked tasks: only read the tasks when something happened at a place with links.
+  const now = new Date();
+  const hasLinks = events.some((e) => data.links.some((l) => l.placeId === e.placeId));
+  const due = hasLinks ? linkedDue(await phoneState(), data.links, dayKey(now)) : {};
+  let notices: PlaceNotice[] = [];
+  await updateGeo((d) => {
+    const r = placeActions(d, events, items, now, due);
+    notices = r.notices;
+    return r.data;
+  });
+  for (const n of notices) await show(n, spaceId);
 }
 
+const linkFor = (open: NoticeOpen, spaceId?: string) =>
+  open.to === 'shopping' ? (spaceId ? `focus://space/${spaceId}` : null) : open.to === 'work' ? `focus://work/${open.placeId}` : `focus://place-reminder/${open.placeId}`;
+
+const dataFor = (open: NoticeOpen) => (open.to === 'shopping' ? { open: 'shopping' } : { open: open.to === 'work' ? 'work' : 'place-reminder', placeId: open.placeId });
+
 async function show(n: PlaceNotice, spaceId?: string) {
-  if (n.kind === 'full-screen' && FocusAlarm?.showPlacePopup && spaceId) {
-    const ok = await FocusAlarm.showPlacePopup(n.id, n.title, n.body, `focus://space/${spaceId}`).catch(() => false);
+  const link = linkFor(n.open, spaceId);
+  if (n.kind === 'full-screen' && FocusAlarm?.showPlacePopup && link) {
+    const ok = await FocusAlarm.showPlacePopup(n.id, n.title, n.body, link).catch(() => false);
     if (ok) return;
   }
   await Notifications.scheduleNotificationAsync({
     identifier: n.id,
-    content: { title: n.title, body: n.body, data: { open: n.open }, threadIdentifier: 'places' },
+    content: { title: n.title, body: n.body, data: dataFor(n.open), threadIdentifier: 'places' },
     trigger: Platform.OS === 'android' ? { channelId: CHANNEL } : null,
   });
+}
+
+/** "Any supermarket": she's stood still somewhere new. One Google look-up; ask only if it's a supermarket and the list has things on it. */
+async function lookForSupermarket(at: { lat: number; lon: number }) {
+  const { items, spaceId } = await shoppingNow();
+  if (!items.length || !configured) return;
+  await updateGeo((d) => countLookup(d, new Date()));
+  const res: any = await Promise.race([
+    supabase.functions.invoke('focus-places', { body: { action: 'nearby-shop', lat: at.lat, lon: at.lon } }),
+    new Promise((r) => setTimeout(() => r(null), 10000)),
+  ]).catch(() => null);
+  const shop = res?.data?.shop;
+  if (!shop || typeof shop.name !== 'string') return;
+  const n = items.length;
+  await show({ kind: 'full-screen', id: `shop-${Date.now()}`, title: `You're at ${shop.name}. Want your shopping list?`, body: `${n} ${n === 1 ? 'thing' : 'things'} on it.`, open: { to: 'shopping' } }, spaceId);
+}
+
+const SHORT_DAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * The day-before warnings for "once" reminders about a day: at 18:00 the day before, if it hasn't been
+ * done by then, so she can phone or message instead. Re-made whenever reminders change.
+ */
+export async function syncReminderWarnings(data: GeoData): Promise<void> {
+  if (!supported) return;
+  try {
+    const all = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(all.filter((n) => n.identifier.startsWith(PLACE_WARN_PREFIX)).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+    const now = Date.now();
+    for (const r of data.reminders) {
+      const place = data.places.find((p) => p.id === r.placeId);
+      const at = warnAt(r);
+      if (!place || !at || at.getTime() <= now || !r.byDay) continue;
+      const [y, m, d] = r.byDay.split('-').map(Number);
+      const day = SHORT_DAY[new Date(y, m - 1, d).getDay()];
+      await Notifications.scheduleNotificationAsync({
+        identifier: `${PLACE_WARN_PREFIX}${r.id}`,
+        content: {
+          title: `Still to do, for ${day}: ${r.text.replace(/\.$/, '')}`,
+          body: `If you won't be at ${place.name} before then, phone or message them instead. Focus can draft it.`,
+          data: { open: 'place-reminder', placeId: place.id, warn: r.id },
+          threadIdentifier: 'places',
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, ...(Platform.OS === 'android' ? { channelId: CHANNEL } : {}) },
+      });
+    }
+  } catch {
+    // Notifications not allowed: the place's screen still shows the reminder.
+  }
 }
 
 if (supported) {
@@ -170,6 +246,15 @@ export async function checkNow(): Promise<void> {
 }
 
 /** Where she is standing now, for "Use where I am now" on a place. Never saved anywhere else. */
+/** Roughly where the phone is, to put nearby addresses first. Never asks for permission, never waits for GPS. */
+export async function roughlyHere(): Promise<{ lat: number; lon: number } | null> {
+  if (!supported) return null;
+  const fg = await Location.getForegroundPermissionsAsync().catch(() => null);
+  if (!fg?.granted) return null;
+  const l = await Location.getLastKnownPositionAsync({ maxAge: 30 * 60 * 1000 }).catch(() => null);
+  return l ? { lat: l.coords.latitude, lon: l.coords.longitude } : null;
+}
+
 export async function hereNow(): Promise<{ lat: number; lon: number; accuracyM: number | null } | null> {
   if (!supported) return null;
   const fg = await Location.requestForegroundPermissionsAsync().catch(() => null);

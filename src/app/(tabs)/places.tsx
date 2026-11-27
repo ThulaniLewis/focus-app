@@ -1,15 +1,51 @@
-// Places: where Focus notices you arrive and leave. Set by address, phone only.
+// Places: the places she goes all the time. Each one's type decides what Focus does there. Phone only.
+// Key places are asked for one type at a time ("Where's home?", "Where do you do your food shop?"); she
+// can skip any. Names and addresses all come from her; nothing here knows any of them.
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon } from '../../components/Icon';
-import { Button, Card, Header, Screen, Section, T } from '../../components/ui';
+import { Button, Card, Header, Screen, Section, T, Toggle } from '../../components/ui';
 import { featureOn } from '../../lib/features';
-import { PLACE_TYPES, whereLine } from '../../lib/geo';
-import { useGeo } from '../../lib/geoStore';
+import { type GeoPlace, whereLine } from '../../lib/geo';
+import { setAnySupermarket, skipType, useGeo } from '../../lib/geoStore';
 import { locationStatus, type LocationStatus } from '../../lib/location';
+import { PLACE_TYPES, summaryLine, typeInfo } from '../../lib/placeTypes';
 import { useNow, useStore } from '../../lib/store';
 import { space, useColors } from '../../theme';
+
+function Row({ icon, title, line, onPress, ask, last, label }: { icon: string; title: string; line: string; onPress: () => void; ask?: boolean; last?: boolean; label: string }) {
+  const c = useColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 64, paddingVertical: space[2], borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth, borderBottomColor: c.line }}
+    >
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: ask ? 'transparent' : c.primarySoft,
+          borderWidth: ask ? 1.5 : 0,
+          borderStyle: 'dashed',
+          borderColor: c.outline,
+        }}
+      >
+        <Icon name={icon} size={18} color={ask ? c.inkMuted : c.primaryStrong} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <T v={ask ? 'body' : 'bodyStrong'} color={ask ? c.primary : undefined}>{title}</T>
+        <T v="caption" muted numberOfLines={2}>{line}</T>
+      </View>
+      <Icon name="chevron-right" size={20} color={c.inkMuted} />
+    </Pressable>
+  );
+}
 
 export default function Places() {
   const { state } = useStore();
@@ -24,11 +60,36 @@ export default function Places() {
   );
   const on = featureOn(state.settings, 'places');
   const where = whereLine(geo, now);
+  const open = (p: GeoPlace) => geo.reminders.filter((r) => r.placeId === p.id && !r.doneAt).length;
+  const linkedHere = (p: GeoPlace) => geo.links.filter((l) => l.placeId === p.id && state.tasks.some((t) => t.id === l.taskId)).length;
+  const placeRow = (p: GeoPlace, last: boolean) => (
+    <Row key={p.id} icon={typeInfo(p.type).icon} title={p.name} line={summaryLine(p, open(p), linkedHere(p))} onPress={() => router.navigate(`/place/${p.id}`)} last={last} label={`${p.name}, ${typeInfo(p.type).label}. Tap to open`} />
+  );
+
+  // Key places, in the order they're asked for: what she has, or the question for what she hasn't.
+  const keyTypes = PLACE_TYPES.filter((t) => t.ask);
+  const keyRows: React.ReactNode[] = [];
+  const skippedAsks: string[] = [];
+  for (const t of keyTypes) {
+    const mine = geo.places.filter((p) => p.type === t.id);
+    if (mine.length) mine.forEach((p) => keyRows.push(placeRow(p, false)));
+    else if ((geo.skipped ?? []).includes(t.id)) skippedAsks.push(t.id);
+    else
+      keyRows.push(
+        <View key={`ask-${t.id}`}>
+          <Row ask icon={t.icon} title={t.ask!.question} line={t.ask!.about} onPress={() => router.navigate(`/place/new?type=${t.id}`)} label={`${t.ask!.question} Tap to add`} />
+          <View style={{ alignItems: 'flex-end', marginTop: -space[2] }}>
+            <Button kind="quiet" small label="Not for me" onPress={() => skipType(t.id, true)} />
+          </View>
+        </View>,
+      );
+  }
+  const others = geo.places.filter((p) => !typeInfo(p.type).ask);
 
   return (
     <Screen>
-      <Header title="Places" fallback="/settings" />
-      <T v="body" muted>Focus notices when you arrive and leave, so it can bring your shopping list at the right moment. No buttons to press.</T>
+      <Header title="Places" kicker="SETTINGS" fallback="/settings" />
+      <T v="body" muted>{"The places you go all the time. Each one's type decides what Focus does there."}</T>
 
       {!on && (
         <Card tone="soft">
@@ -51,38 +112,31 @@ export default function Places() {
         </Card>
       )}
 
-      <Section title="Your places">
+      <Section title="Your key places">
+        <Card>{keyRows}</Card>
+        {skippedAsks.length > 0 && (
+          <Button
+            kind="quiet"
+            small
+            label={`Ask me again about ${skippedAsks.map((id) => typeInfo(id as GeoPlace['type']).label.toLowerCase()).join(', ')}`}
+            onPress={() => skippedAsks.forEach((id) => skipType(id as GeoPlace['type'], false))}
+          />
+        )}
+      </Section>
+
+      <Section title="Other places">
         <Card>
-          {geo.places.length === 0 && <T v="body" muted>Start with home. Add your food shop next, so your list pops up when you get there.</T>}
-          {geo.places.map((p, i) => {
-            const type = PLACE_TYPES.find((t) => t.id === p.type);
-            return (
-              <Pressable
-                key={p.id}
-                onPress={() => router.navigate(`/place/${p.id}`)}
-                accessibilityRole="button"
-                accessibilityLabel={`${p.name}, ${type?.label}. Tap to change`}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: space[3],
-                  minHeight: 56,
-                  borderBottomWidth: i === geo.places.length - 1 ? 0 : StyleSheet.hairlineWidth,
-                  borderBottomColor: c.line,
-                }}
-              >
-                <Icon name={type?.icon ?? 'map-pin'} size={20} color={c.primary} />
-                <View style={{ flex: 1 }}>
-                  <T v="bodyStrong">{p.name}</T>
-                  <T v="caption" muted numberOfLines={1}>{`${type?.label} · ${p.radiusM} m circle${p.address ? ` · ${p.address}` : ''}`}</T>
-                </View>
-                <Icon name="chevron-right" size={20} color={c.inkMuted} />
-              </Pressable>
-            );
-          })}
-          <Button kind="soft" label={geo.places.length ? 'Add a place' : 'Add home'} onPress={() => router.navigate('/place/new')} />
+          {others.map((p) => placeRow(p, false))}
+          <Row ask icon="plus" title="Anywhere else you go a lot?" line="Family, the gym, anywhere." onPress={() => router.navigate('/place/new?type=other')} last label="Add another place" />
         </Card>
       </Section>
+
+      <Card>
+        <Toggle label="Any supermarket, not just mine" value={geo.anySupermarket} onChange={(v) => setAnySupermarket(v).catch(() => {})} />
+        <T v="caption" muted>
+          {"If you stop in another supermarket with things on your list, Focus asks once. To check, it sends Google where you're standing, only then, at most a few times a day."}
+        </T>
+      </Card>
 
       <Section title="More">
         <Card>
@@ -91,7 +145,7 @@ export default function Places() {
         </Card>
       </Section>
 
-      <T v="caption" muted>{"Places stay on your phone. They're never synced to the tablet or read aloud."}</T>
+      <T v="caption" muted>{"Places and their reminders stay on your phone. They're never synced to the tablet or read aloud."}</T>
     </Screen>
   );
 }

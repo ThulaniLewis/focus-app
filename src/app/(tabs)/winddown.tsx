@@ -6,6 +6,7 @@ import { PlanList } from '../../components/Plan';
 import { TaskRow } from '../../components/TaskRow';
 import { Card, Screen, Section, T } from '../../components/ui';
 import { useDiary } from '../../lib/calendar';
+import { allDayEvents } from '../../lib/dumpContext';
 import { useNow, useStore } from '../../lib/store';
 import { radius, space, useColors } from '../../theme';
 import { agendaFor, dayKey, fmtTime, isDoneOn, tasksFor, wakeFor } from '../../lib/time';
@@ -28,7 +29,9 @@ export default function WindDown() {
   const tomorrow = dayKey(t);
   const [refresh, setRefresh] = useState(0);
   useFocusEffect(useCallback(() => setRefresh((r) => r + 1), []));
-  const { events } = useDiary(state.settings.readCalendar, 2, refresh);
+  const { events: phoneEvents } = useDiary(state.settings.readCalendar, 2, refresh);
+  // Her phone diary plus Focus's own whole-day entries (her child with someone for the day).
+  const events = [...phoneEvents, ...allDayEvents(state.tasks)];
 
   const tasks = tasksFor(state, today);
   const wins = [
