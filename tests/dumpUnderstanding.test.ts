@@ -147,3 +147,51 @@ test('a normal mixed dump still sorts as before', () => {
   const r2 = normalise({ items: [{ title: 'Call the bank', kind: 'event', day: '2026-12-01' }], notes: [], reply: '' }, settings, DEFAULT_SPACES);
   assert.equal(r2.items[0].kind, 'task');
 });
+
+// ---- Part 3: privacy only when she means it ----
+test('a packing item is never private because of what it is, and never drags others in', () => {
+  const r = normalise(
+    {
+      items: [
+        { title: 'Pack my underwear', kind: 'task', space_id: 'me' },
+        { title: 'Pack my makeup', kind: 'task', space_id: 'me' },
+        { title: 'Book the smear test', kind: 'task', space_id: 'me', private: true },
+        { title: "I'm feeling really flat today", kind: 'note' },
+      ],
+      notes: [],
+      reply: '',
+    },
+    settings,
+    DEFAULT_SPACES,
+  );
+  assert.deepEqual(r.items.map((i) => [i.title, i.kind, i.spaceId]), [
+    ['Pack my underwear', 'task', undefined],
+    ['Pack my makeup', 'task', undefined],
+    ['Book the smear test', 'task', 'me'],
+    ["I'm feeling really flat today", 'note', 'me'],
+  ]);
+});
+
+// ---- Part 4: smaller fixes ----
+test('rooms: outside, behind the bin or in the car is never the hallway', () => {
+  const s = { ...settings, rooms: [...settings.rooms, { name: 'Hallway', floor: 'down' as const }] };
+  const r = normalise(
+    { items: [{ title: 'Bring in the Amazon parcel from behind the bin outside', kind: 'task', room: 'hallway' }, { title: 'Get the car seat from in the car', kind: 'task', room: 'hallway' }, { title: 'Hoover the hallway', kind: 'task', room: 'hallway' }], notes: [], reply: '' },
+    s,
+    DEFAULT_SPACES,
+  );
+  assert.deepEqual(r.items.map((i) => i.room), [undefined, undefined, 'hallway']);
+});
+
+test('the wind down nudge is one plain line: "Ready to wind down?" and what tomorrow starts with', async () => {
+  const { plan } = await import('../src/lib/nudges');
+  const wind: Task = { id: 'w', seed: 'wind-down', title: 'Wind down: open Focus, check tomorrow', kind: 'event', at: '2026-11-20T22:00', repeatDays: [0, 1, 2, 3, 4, 5, 6], nag: true, estimateMin: 10, createdAt: '', done: false };
+  const tyre: Task = { id: 't', title: 'Tyre repair', kind: 'event', at: '2026-11-28T10:00', createdAt: '', done: false };
+  const out = plan(state([wind, tyre]), new Date('2026-11-27T21:00:00')).filter((p) => p.nag?.taskId === 'w' && p.nag.day === '2026-11-27');
+  assert.ok(out.length >= 1);
+  for (const p of out) {
+    assert.equal(p.title, 'Ready to wind down?');
+    assert.equal(p.body, 'Tomorrow starts with Tyre repair at 10:00.');
+    assert.doesNotMatch(`${p.title} ${p.body}`, /Still to do|Wind down:|About \d+ min/);
+  }
+});

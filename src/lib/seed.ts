@@ -45,6 +45,14 @@ export const STARTERS: Starter[] = [
   { seed: 'wind-down', title: 'Wind down: open Focus, check tomorrow', time: '22:00', repeatDays: EVERY_DAY, nag: true, estimateMin: 10 },
 ];
 
+/**
+ * How a starter job's nudge reads, as one plain line (brief 4). "ahead" adds what tomorrow starts with.
+ * Data, keyed by the seed id, so the wording can change without touching the nudge code.
+ */
+export const SEED_NUDGES: Record<string, { title: string; ahead?: boolean }> = {
+  'wind-down': { title: 'Ready to wind down?', ahead: true },
+};
+
 // ---- v4: the house reset, from the room photos on 18 Nov 2026 ----
 // One-off timed chunks, most important first. Job search is paused on Thu 19 Nov so the house comes first.
 

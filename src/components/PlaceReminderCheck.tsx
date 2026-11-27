@@ -1,11 +1,24 @@
 // The check before a place reminder is kept: "When you arrive at X, remind you to …" Yes, change it or no.
 // Nothing is saved until she says yes. Used after a dump.
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Field } from './Account';
 import { Button, Card, T } from './ui';
 import { confirmLine, type SuggestedReminder } from '../lib/placeTalk';
-import { space } from '../theme';
+import { space, useColors } from '../theme';
+
+/** An answered check folds into one line ("Linked to Home. Undo") so the list doesn't get pushed down. */
+export function Folded({ text, onUndo }: { text: string; onUndo: () => void }) {
+  const c = useColors();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], minHeight: 40, paddingHorizontal: space[1] }}>
+      <T v="caption" muted style={{ flex: 1 }}>{text}</T>
+      <Pressable onPress={onUndo} accessibilityRole="button" accessibilityLabel={`Undo: ${text}`} hitSlop={10} style={{ paddingVertical: space[1], paddingHorizontal: space[2] }}>
+        <T v="caption" color={c.primary}>Undo</T>
+      </Pressable>
+    </View>
+  );
+}
 
 export type ReminderAnswer = 'yes' | 'no' | null;
 
@@ -23,6 +36,10 @@ export function PlaceReminderCheck({
   onChange: (text: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  if (answer && !editing) {
+    const what = r.text.charAt(0).toLowerCase() + r.text.slice(1).replace(/\.$/, '');
+    return <Folded text={answer === 'yes' ? `Reminder kept for ${placeName}: ${what}.` : 'Reminder left out.'} onUndo={() => onAnswer(null)} />;
+  }
   return (
     <Card tone={answer === 'yes' ? 'soft' : 'surface'} style={{ gap: space[2], opacity: answer === 'no' ? 0.5 : 1 }}>
       <T v="label" muted>A REMINDER FOR A PLACE</T>

@@ -27,6 +27,10 @@ export type ParseResult = { items: ParsedItem[]; notes: string[]; reply: string 
 
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** Words that mean a thing is outside the house, so it never gets a room (brief 4). Data, extend freely. */
+export const OUTSIDE_WORDS = ['outside', 'behind the bin', 'by the bin', 'in the car', 'garden', 'driveway', 'the drive', 'front path'];
+const isOutside = (text: string) => OUTSIDE_WORDS.some((w) => text.toLowerCase().includes(w));
+
 /** Clean up whatever came back so the app never trusts it blindly. */
 export function normalise(input: any, settings: Settings, spaces: Space[]): ParseResult {
   const roomSlugs = new Set(settings.rooms.map((r) => slug(r.name)));
@@ -51,7 +55,9 @@ export function normalise(input: any, settings: Settings, spaces: Space[]): Pars
     if (kind === 'event' && !at && !allDay) kind = 'task';
     const fromRoom = fixRoom(raw.grab?.from_room);
     let spaceId: string | undefined = typeof raw.space_id === 'string' && spaceIds.has(raw.space_id) ? raw.space_id : undefined;
-    const room = kind === 'task' ? fixRoom(raw.room) : undefined;
+    const room = kind === 'task' && !isOutside(raw.title) ? fixRoom(raw.room) : undefined;
+    // Privacy only when she means it: a task Claude put in the private space without saying it's private comes back out.
+    if (spaceId && spaceId === privateSpace?.id && kind !== 'note' && raw.private !== true) spaceId = undefined;
 
     let list: ParsedItem['list'];
     let group: string | undefined;

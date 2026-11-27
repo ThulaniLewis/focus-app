@@ -4,6 +4,7 @@ import { isPrivateSpace } from './sync';
 import type { State, Task } from './types';
 import { whyNow } from './support';
 import { houseBlocked } from './comeUp';
+import { SEED_NUDGES } from './seed';
 
 /** When a date-only deadline's countdown alerts go off. A reminder time, not a job time. */
 export const DEADLINE_MORNING = '09:00';
@@ -106,6 +107,11 @@ export function plan(state: State, now: Date): Planned[] {
           // Only the job you should be on now keeps nudging: stop at the next job or checkpoint.
           // The one nudge you asked for with Snooze still comes.
           if (k > 0 && !isSnoozeNudge && gate && at.getTime() >= gate.getTime()) break;
+          const plain = a.task.seed ? SEED_NUDGES[a.task.seed] : undefined;
+          if (plain) {
+            out.push({ at, title: plain.title, body: plain.ahead ? aheadLine(state, d) : "Tap Done when it's done.", nag: { taskId: a.task.id, day }, thread: `job-${a.task.id}` });
+            continue;
+          }
           out.push({
             at,
             title: k === 0 ? a.task.title : `Still to do: ${a.task.title}`,
@@ -225,3 +231,11 @@ export function plannedCount(state: State, now: Date) {
   return plan(state, now).length;
 }
 
+
+/** "Tomorrow starts with Tyre repair at 10:00." One plain line for the evening nudge. */
+export function aheadLine(state: State, today: Date): string {
+  const t = new Date(today);
+  t.setDate(t.getDate() + 1);
+  const first = agendaFor(state, dayKey(t)).find((a) => !a.done && !a.task.flex);
+  return first ? `Tomorrow starts with ${first.task.title} at ${fmtTime(first.at)}.` : 'Nothing fixed tomorrow.';
+}

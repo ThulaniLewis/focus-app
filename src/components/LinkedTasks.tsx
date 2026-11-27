@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Field } from './Account';
 import { Icon } from './Icon';
 import { Button, Card, T } from './ui';
+import { Folded } from './PlaceReminderCheck';
 import type { GeoPlace } from '../lib/geo';
 import { useDeviceRole } from '../lib/device';
 import { featureOn } from '../lib/features';
@@ -113,6 +114,7 @@ export function LinkCheck({
   const options = linkablePlaces(places);
   const place = options.find((p) => p.id === placeId);
   if (!place) return null;
+  if (answer && !changing) return <Folded text={answer === 'yes' ? `${title}: linked to ${place.name}.` : `${title}: not linked.`} onUndo={() => onAnswer(null)} />;
   return (
     <Card tone={answer === 'yes' ? 'soft' : 'surface'} style={{ gap: space[2], opacity: answer === 'no' ? 0.5 : 1 }}>
       <T v="label" muted>{title.toUpperCase()}</T>
@@ -174,7 +176,7 @@ export function useLinkOffer(state: State) {
       answer={offer.answer}
       onAnswer={(a) => {
         if (a === 'yes') linkTask(offer.taskId, offer.placeId).catch(() => {});
-        if (a === 'no' && offer.answer === 'yes') unlinkTask(offer.taskId).catch(() => {});
+        if (a !== 'yes' && offer.answer === 'yes') unlinkTask(offer.taskId).catch(() => {});
         setOffer({ ...offer, answer: a });
       }}
       onPlace={(pid) => {
