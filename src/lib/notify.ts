@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { NAG, plan } from './nudges';
+import { geoSnapshot } from './geoStore';
+import { homeLinkedIds } from './awayMode';
 import type { State } from './types';
 import { isTabletDevice } from './device';
 
@@ -141,7 +143,8 @@ export function syncNotifications(state: State) {
         lastSignature = 'tablet';
         return;
       }
-      const planned = plan(state, new Date()).slice(0, 120);
+      const geo = geoSnapshot();
+      const planned = plan(state, new Date(), { away: geo.away, homeLinked: homeLinkedIds(geo.places, geo.links), live: geo.live }).slice(0, 120);
       await tidyPresented(state);
       const signature = planned.map((p) => `${p.at.getTime()}|${p.title}|${p.body}|${p.loud ? 1 : 0}`).join('\n');
       if (signature === lastSignature) return;
@@ -153,7 +156,7 @@ export function syncNotifications(state: State) {
           content: {
             title: p.title,
             body: p.body,
-            ...(p.nag ? { data: p.nag, categoryIdentifier: NAG } : p.ref ? { data: p.ref } : {}),
+            ...(p.nag ? { data: p.nag, categoryIdentifier: NAG } : p.ref ? { data: p.ref } : p.data ? { data: p.data } : {}),
             ...(thread ? { threadIdentifier: thread } : {}),
           },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: p.loud ? LOUD_CHANNEL : CHANNEL },

@@ -7,6 +7,7 @@ import { featureOn } from '../lib/features';
 import { takeTicks, useGeo } from '../lib/geoStore';
 import { useDeviceRole } from '../lib/device';
 import { checkNow, syncReminderWarnings, syncTracking } from '../lib/location';
+import { syncNotifications } from '../lib/notify';
 import { useStore } from '../lib/store';
 import { isDoneOn } from '../lib/time';
 
@@ -28,6 +29,14 @@ export function PlacesHost() {
     // placesKey stands for the places: only their circles matter here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [on, placesKey]);
+
+  // Away mode (and links to home) change what gets nudged: plan again when they change.
+  const awayKey = JSON.stringify([geo.away, geo.links.length, geo.places.length, (geo.live ?? []).map((r) => [r.key, r.leaveAt, r.undone])]);
+  useEffect(() => {
+    if (role !== 'phone') return;
+    syncNotifications(latest.current.state);
+    // awayKey stands for away mode, the home links and live traffic moves.
+  }, [role, awayKey]);
 
   useEffect(() => {
     if (!on) return;

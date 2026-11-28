@@ -1,15 +1,17 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { PlanList } from '../../components/Plan';
 import { TaskRow } from '../../components/TaskRow';
-import { Card, Screen, Section, T } from '../../components/ui';
+import { Button, Card, Screen, Section, T } from '../../components/ui';
 import { useDiary } from '../../lib/calendar';
 import { allDayEvents } from '../../lib/dumpContext';
 import { useNow, useStore } from '../../lib/store';
 import { radius, space, useColors } from '../../theme';
 import { agendaFor, dayKey, fmtTime, isDoneOn, tasksFor, wakeFor } from '../../lib/time';
+import { awayCard } from '../../lib/awayMode';
+import { useAway } from '../../lib/useAway';
 
 const FEELINGS = [
   { label: 'Good', icon: 'sun' },
@@ -33,6 +35,7 @@ export default function WindDown() {
   // Her phone diary plus Focus's own whole-day entries (her child with someone for the day).
   const events = [...phoneEvents, ...allDayEvents(state.tasks)];
 
+  const away = useAway();
   const tasks = tasksFor(state, today);
   const wins = [
     ...tasks.filter((x) => isDoneOn(x, today)),
@@ -41,6 +44,22 @@ export default function WindDown() {
   const open = tasks.filter((x) => !isDoneOn(x, today));
   const wake = wakeFor(state, tomorrow);
   const todaysFeeling = state.checkins.find((x) => x.day === today)?.feeling;
+
+  if (away) {
+    // Away tonight: one short card. No room jobs, no wins list about the house.
+    const card = awayCard(state, away, now);
+    return (
+      <Screen>
+        <Card style={{ gap: space[3] }}>
+          <T v="label" muted>WIND DOWN · AWAY</T>
+          <T v="title">{card.title}</T>
+          <T v="body">{card.body}</T>
+          <Button label="Say something to add" onPress={() => router.navigate('/dump')} />
+          <Button kind="soft" label="Done" onPress={() => router.navigate('/')} />
+        </Card>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>

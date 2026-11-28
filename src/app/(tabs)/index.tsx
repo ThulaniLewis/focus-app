@@ -17,6 +17,9 @@ import { clearLastCrash, readLastCrash } from '../../lib/crash';
 import { calendarAllowed, checkDiary, type DiaryCheck, useDiary } from '../../lib/calendar';
 import { allDayEvents } from '../../lib/dumpContext';
 import { GrabListCards } from '../../components/GrabListCard';
+import { AwayLine } from '../../components/AwayLine';
+import { LiveTripCards } from '../../components/LiveTripCard';
+import { useAwayPaused } from '../../lib/useAway';
 import { useNow, useStore } from '../../lib/store';
 import { radius, space, useColors } from '../../theme';
 import { agendaFor, dayKey, fmtTime, slug, tasksFor, wakeFor, isDoneOn } from '../../lib/time';
@@ -54,7 +57,9 @@ function TodayList() {
     if (state.settings.readCalendar) checkDiary().then(setDiary).catch(() => {});
   }, [refresh, state.settings.readCalendar]);
 
-  const tasks = tasksFor(state, today);
+  // Away tonight: home jobs are paused, so they wait off the list and roll over quietly.
+  const paused = useAwayPaused();
+  const tasks = tasksFor(state, today).filter((t) => !paused(t));
   const roomed = tasks.filter((t) => t.room && !isDoneOn(t, today));
   const open = tasks.filter((t) => !t.room && !isDoneOn(t, today));
   const doneToday = tasks.filter((t) => isDoneOn(t, today));
@@ -78,6 +83,10 @@ function TodayList() {
         </View>
         <IconButton name="settings" label="Settings" tone="quiet" onPress={() => router.navigate('/settings')} />
       </View>
+
+      <AwayLine />
+
+      <LiveTripCards />
 
       <GrabListCards />
 

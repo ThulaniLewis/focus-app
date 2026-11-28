@@ -5,6 +5,9 @@ import type { State, Task } from './types';
 import { whyNow } from './support';
 import { houseBlocked } from './comeUp';
 import { SEED_NUDGES } from './seed';
+import { awayCard, awayNights, eveningAt, pausedByAway } from './awayMode';
+import { type Away, awayNow } from './grabLists';
+import { liveAgenda, type LiveTrip } from './liveTraffic';
 
 /** When a date-only deadline's countdown alerts go off. A reminder time, not a job time. */
 export const DEADLINE_MORNING = '09:00';
@@ -48,10 +51,15 @@ export type Planned = {
   loud?: boolean;
   /** Notifications with the same thread stack together in the tray. */
   thread?: string;
+  /** What a tap opens, for nudges that aren't about one job (away mode). */
+  data?: Record<string, string>;
 };
 
+/** What the phone knows that the synced State doesn't: away mode and links to home (phone only). */
+export type PlanOpts = { away?: Away | null; homeLinked?: Set<string>; live?: LiveTrip[] };
+
 /** The next flexible job to suggest at a given time of day, if any. */
-function nextJob(state: State, day: string, at: Date): { task: Task; more: number } | null {
+function nextJob(state: State, day: string, at: Date, paused: (t: Task) => boolean = () => false): { task: Task; more: number } | null {
   const hm = fmtTime(at);
   const open = tasksFor(state, day).filter(
     (t) =>
@@ -60,7 +68,8 @@ function nextJob(state: State, day: string, at: Date): { task: Task; more: numbe
       (t.flex || !t.at) &&
       (!t.after || hm >= t.after) &&
       (t.priority ?? 2) <= 2 &&
-      !houseBlocked(state, t, day, at), // Sav home sick: house jobs wait for her nap or bedtime
+      !houseBlocked(state, t, day, at) && // Sav home sick: house jobs wait for her nap or bedtime
+      !paused(t), // away tonight: home jobs wait till she's back
   );
   if (!open.length) return null;
   const ordered = hallwayLast(open, (t) => t.room);
@@ -68,13 +77,23 @@ function nextJob(state: State, day: string, at: Date): { task: Task; more: numbe
 }
 
 /** Everything Focus should nudge about in the next week. */
-export function plan(state: State, now: Date): Planned[] {
+export function plan(state: State, now: Date, opts: PlanOpts = {}): Planned[] {
   const out: Planned[] = [];
+  const away = awayNow(opts.away);
+  const homeLinked = opts.homeLinked ?? new Set<string>();
+  // Away mode covers tonight and tomorrow; arriving home ends it and the plan is made again.
+  const pausedOn = (i: number) => (t: Task) => !!away && i <= 1 && pausedByAway(t, state, homeLinked);
   for (let i = 0; i < 7; i++) {
     const d = new Date(now);
     d.setDate(d.getDate() + i);
     const day = dayKey(d);
-    const agenda = agendaFor(state, day);
+    // Live traffic: today's leave-by and the jobs before it, as moved (until she taps Undo).
+    const agenda = liveAgenda(agendaFor(state, day), opts.live, day);
+    const paused = pausedOn(i);
+    if (away && i <= 1 && !awayNights(away).includes(day)) {
+      // Another night? Asked once, at the start of her evening.
+      out.push({ at: eveningAt(state, day), title: 'Still away tonight?', body: `At ${away.placeName}. Home jobs stay paused if you are.`, data: { open: 'away', placeId: 'still' }, thread: 'away' });
+    }
     // Moments that end a job's nudges: the next job's time, a leave-by, Sav asleep, wind down.
     const gates = [
       ...agenda.filter((x) => x.leaveAt).map((x) => x.leaveAt!),
@@ -85,6 +104,14 @@ export function plan(state: State, now: Date): Planned[] {
       gates.filter((g) => g.getTime() > after.getTime()).sort((x, y) => x.getTime() - y.getTime())[0] ?? null;
     for (const a of agenda) {
       if (a.done) continue;
+      if (paused(a.task)) {
+        // The home wind down becomes one short card, once, on a night she's away. Nothing else.
+        if (away && (a.task.seed === 'wind-down' || /^wind down/i.test(a.task.title)) && awayNights(away).includes(day)) {
+          const card = awayCard(state, away, d);
+          out.push({ at: a.at, title: card.title, body: card.body, data: { open: 'away', placeId: 'card' }, thread: 'away' });
+        }
+        continue; // rolls over quietly: nothing missed, nothing skipped
+      }
       const sp = state.spaces.find((x) => x.id === a.task.spaceId);
       if (sp?.kind === 'private') continue; // never pop private things up on screen
       if (a.task.nag) {
@@ -156,7 +183,7 @@ export function plan(state: State, now: Date): Planned[] {
     for (const hm of weekend || savAwayByPattern(state.settings, day) ? NEXT_WINDOWS_WEEKEND : NEXT_WINDOWS_WEEKDAY) {
       const w = new Date(`${day}T${hm}:00`);
       if (busy(w)) continue;
-      const next = nextJob(state, day, w);
+      const next = nextJob(state, day, w, pausedOn(i));
       if (!next) continue;
       out.push({
         at: w,

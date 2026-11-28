@@ -14,25 +14,30 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { FocusAlarm } from '../../modules/focus-alarm';
 import { colors } from '../theme';
-import { countLookup, type Fix, type FenceEvent, type GeoData, type GeoLogEntry, type GeoPlace, mergeShopping, type NoticeOpen, observe, placeActions, type PlaceNotice, shoppingItems, shoppingSpaceId, stillCheck, warnAt } from './geo';
+import { countLookup, type Fix, type FenceEvent, type GeoData, type GeoLogEntry, type GeoPlace, mergeShopping, type NoticeOpen, observe, placeActions, type PlaceNotice, shoppingItems, shoppingSpaceId, STALE_MS, stillCheck, warnAt } from './geo';
 import { linkedDue } from './placeLinks';
 import { does } from './placeTypes';
 import { dayKey } from './time';
-import { loadGeo, updateGeo } from './geoStore';
+import { loadGeo, markAwayAsk, updateGeo } from './geoStore';
+import { awayAskAt, awayAskLine } from './awayMode';
+import { applyLive, dueCheck, type LiveNotice, type TravelMode, tripsToday } from './liveTraffic';
 import { migrate, STATE_KEY } from './migrate';
-import { CHANNEL, PLACE_WARN_PREFIX } from './notify';
+import { CHANNEL, LOUD_CHANNEL, PLACE_WARN_PREFIX, syncNotifications } from './notify';
 import { configured, supabase } from './supabase';
 
 export const FENCE_TASK = 'focus-places-fence';
 export const UPDATES_TASK = 'focus-places-updates';
 
 const supported = Platform.OS === 'android' || Platform.OS === 'ios';
+const UPDATES_VERSION_KEY = 'focus.places.updatesVersion';
+const UPDATES_VERSION = '2';
 
 /** About every 5 minutes, or after 100 m, at "balanced" (Wi-Fi and cell, not GPS all the time). */
 const UPDATE_OPTIONS: Location.LocationTaskOptions = {
   accuracy: Location.Accuracy.Balanced,
   timeInterval: 5 * 60 * 1000,
-  distanceInterval: 100,
+  // 0, so a position still comes every 5 minutes when she's sat at home: live traffic checks need it.
+  distanceInterval: 0,
   deferredUpdatesInterval: 5 * 60 * 1000,
   foregroundService: {
     notificationTitle: 'Focus is noticing home and out',
@@ -57,7 +62,62 @@ export async function handleObservation(obs: Fix | FenceEvent): Promise<GeoLogEn
   });
   if (events.length) await act(events, data).catch(() => {});
   if (lookUp) await lookForSupermarket(lookUp).catch(() => {});
+  await liveCheck(events.some((e) => e.event === 'leave')).catch(() => {});
   return events;
+}
+
+/** Ask Google for the live time between two points. Only the points are sent, rounded to about 10 m. */
+async function liveRoute(from: GeoPlace, to: GeoPlace, mode: TravelMode): Promise<{ min: number; usualMin: number } | null> {
+  if (!configured) return null;
+  const res: any = await Promise.race([
+    supabase.functions.invoke('focus-places', { body: { action: 'route', from: { lat: from.lat, lon: from.lon }, to: { lat: to.lat, lon: to.lon }, mode } }),
+    new Promise((r) => setTimeout(() => r(null), 10000)),
+  ]).catch(() => null);
+  const r = res?.data?.route;
+  return r && Number.isFinite(r.min) && Number.isFinite(r.usualMin) ? { min: r.min, usualMin: r.usualMin } : null;
+}
+
+/**
+ * Live traffic (brief 1b Fix 3): about 60, 30 and 15 minutes before each trip's leave-by, and once
+ * when she leaves somewhere. If the leave-by moves by more than 5 minutes, one message with the
+ * reason, and the nudges are planned again. Google down: the usual times stand, and Settings says so.
+ */
+async function liveCheck(justLeft: boolean) {
+  const geo = await loadGeo();
+  if (!geo.places.some((p) => p.trips)) return;
+  const state = await phoneState();
+  const now = new Date();
+  let changed = false;
+  for (const t of tripsToday(state, geo.places, geo.presence.placeId, now)) {
+    const prev = (geo.live ?? []).find((r) => r.key === t.key);
+    const check = dueCheck(t, prev, now, justLeft);
+    if (!check) continue;
+    const google = await liveRoute(t.origin, t.dest, state.settings.travelMode ?? 'drive');
+    let notice: LiveNotice | null = null;
+    await updateGeo((d) => {
+      const before = (d.live ?? []).find((r) => r.key === t.key);
+      const r = applyLive(state, t, before, check, google, now);
+      notice = r.notice;
+      return { ...d, live: [...(d.live ?? []).filter((x) => x.key !== t.key), r.rec], liveStatus: { at: now.toISOString(), ok: !!google } };
+    });
+    if (notice) {
+      changed = true;
+      await showLive(notice);
+    }
+  }
+  if (changed) syncNotifications(state);
+}
+
+async function showLive(n: LiveNotice) {
+  if (n.alarm && FocusAlarm?.showPlacePopup) {
+    const ok = await FocusAlarm.showPlacePopup(n.id, n.title, n.body, 'focus://live').catch(() => false);
+    if (ok) return;
+  }
+  await Notifications.scheduleNotificationAsync({
+    identifier: n.id,
+    content: { title: n.title, body: n.body, data: { open: 'live' }, threadIdentifier: 'live' },
+    trigger: Platform.OS === 'android' ? { channelId: n.alarm ? LOUD_CHANNEL : CHANNEL } : null,
+  });
 }
 
 /** The list on this phone, topped up from the server if it can be reached quickly. */
@@ -92,18 +152,76 @@ async function act(events: GeoLogEntry[], data: GeoData) {
   const hasLinks = events.some((e) => data.links.some((l) => l.placeId === e.placeId));
   const due = hasLinks ? linkedDue(await phoneState(), data.links, dayKey(now)) : {};
   let notices: PlaceNotice[] = [];
-  await updateGeo((d) => {
+  let awayEnded = false;
+  const after = await updateGeo((d) => {
     const r = placeActions(d, events, items, now, due);
     notices = r.notices;
+    awayEnded = !!d.away && !d.away.endedAt && !!r.data.away?.endedAt;
     return r.data;
   });
   for (const n of notices) await show(n, spaceId);
+  await awayQuestion(events, after, now).catch(() => {});
+  // Home again: the home jobs pick up from now, so the nudges are planned afresh.
+  if (awayEnded) syncNotifications(await phoneState());
 }
 
-const linkFor = (open: NoticeOpen, spaceId?: string) =>
-  open.to === 'shopping' ? (spaceId ? `focus://space/${spaceId}` : null) : open.to === 'work' ? `focus://work/${open.placeId}` : `focus://place-reminder/${open.placeId}`;
+const AWAY_ASK_PREFIX = 'away-ask-';
 
-const dataFor = (open: NoticeOpen) => (open.to === 'shopping' ? { open: 'shopping' } : { open: open.to === 'work' ? 'work' : 'place-reminder', placeId: open.placeId });
+/**
+ * Away mode's one question: arriving at a family (or other) place schedules "Looks like you're staying
+ * at X tonight?" for 30 minutes into her evening; leaving before then takes it back. Once a day.
+ */
+async function awayQuestion(events: GeoLogEntry[], data: GeoData, now: Date) {
+  for (const e of events) {
+    if (now.getTime() - new Date(e.at).getTime() > STALE_MS) continue;
+    const key = `${e.placeId}|${dayKey(new Date(e.at))}`;
+    if (e.event === 'leave' && data.awayAsk === key) {
+      await Notifications.cancelScheduledNotificationAsync(`${AWAY_ASK_PREFIX}${key}`).catch(() => {});
+      await markAwayAsk(null);
+      continue;
+    }
+    if (e.event !== 'arrive' || data.awayAsk?.endsWith(`|${dayKey(new Date(e.at))}`)) continue;
+    const place = data.places.find((p) => p.id === e.placeId);
+    if (!place) continue;
+    const at = awayAskAt(await phoneState(), place, new Date(e.at), data.away);
+    if (!at || at.getTime() <= now.getTime()) continue;
+    const line = awayAskLine(place.name);
+    await Notifications.scheduleNotificationAsync({
+      identifier: `${AWAY_ASK_PREFIX}${key}`,
+      content: { title: line.title, body: line.body, data: { open: 'away', placeId: place.id }, threadIdentifier: 'places' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, ...(Platform.OS === 'android' ? { channelId: CHANNEL } : {}) },
+    });
+    await markAwayAsk(key);
+  }
+}
+
+function linkFor(open: NoticeOpen, spaceId?: string): string | null {
+  switch (open.to) {
+    case 'shopping':
+      return spaceId ? `focus://space/${spaceId}` : null;
+    case 'work':
+      return `focus://work/${open.placeId}`;
+    case 'grab':
+      return `focus://grab/${open.listId}${open.left ? '?left=1' : ''}`;
+    case 'away':
+      return `focus://away/${open.placeId}`;
+    default:
+      return `focus://place-reminder/${open.placeId}`;
+  }
+}
+
+function dataFor(open: NoticeOpen): Record<string, string> {
+  switch (open.to) {
+    case 'shopping':
+      return { open: 'shopping' };
+    case 'grab':
+      return { open: 'grab', listId: open.listId, ...(open.left ? { left: '1' } : {}) };
+    case 'away':
+      return { open: 'away', placeId: open.placeId };
+    default:
+      return { open: open.to === 'work' ? 'work' : 'place-reminder', placeId: open.placeId };
+  }
+}
 
 async function show(n: PlaceNotice, spaceId?: string) {
   const link = linkFor(n.open, spaceId);
@@ -225,7 +343,11 @@ export async function syncTracking(opts: { on: boolean; places: GeoPlace[] }): P
     const bg = await Location.getBackgroundPermissionsAsync();
     if (!bg.granted) return await locationStatus();
     await Location.startGeofencingAsync(FENCE_TASK, regionsFor(opts.places)); // replaces the old circles
+    // The update options changed (every 5 minutes even when still): restart once to pick them up.
+    const ver = await AsyncStorage.getItem(UPDATES_VERSION_KEY).catch(() => null);
+    if (ver !== UPDATES_VERSION && (await Location.hasStartedLocationUpdatesAsync(UPDATES_TASK))) await Location.stopLocationUpdatesAsync(UPDATES_TASK).catch(() => {});
     if (!(await Location.hasStartedLocationUpdatesAsync(UPDATES_TASK))) await Location.startLocationUpdatesAsync(UPDATES_TASK, UPDATE_OPTIONS);
+    await AsyncStorage.setItem(UPDATES_VERSION_KEY, UPDATES_VERSION).catch(() => {});
   } catch {
     // Permission changed underneath, or Expo Go: the status says what's running.
   }

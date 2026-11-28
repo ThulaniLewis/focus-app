@@ -149,6 +149,8 @@ export type Settings = {
   look?: import('./look').Look;
   /** The town the Dash shows weather for (rounded to about 10 km). Shared, so the tablet gets it. */
   weatherPlace?: import('./weather').WeatherPlace | null;
+  /** How she gets around, for live travel times. Missing means by car. */
+  travelMode?: import('./liveTraffic').TravelMode;
 };
 
 /** One answer to "how did it go?". lateMin 0 is on time; otherwise roughly 5, 10, 20 or 30 (30 or more). */

@@ -12,6 +12,7 @@ import { setAnySupermarket, skipType, useGeo } from '../../lib/geoStore';
 import { locationStatus, type LocationStatus } from '../../lib/location';
 import { PLACE_TYPES, summaryLine, typeInfo } from '../../lib/placeTypes';
 import { useNow, useStore } from '../../lib/store';
+import { liveStatusLine, type TravelMode } from '../../lib/liveTraffic';
 import { space, useColors } from '../../theme';
 
 function Row({ icon, title, line, onPress, ask, last, label }: { icon: string; title: string; line: string; onPress: () => void; ask?: boolean; last?: boolean; label: string }) {
@@ -47,8 +48,15 @@ function Row({ icon, title, line, onPress, ask, last, label }: { icon: string; t
   );
 }
 
+const TRAVEL_MODES: { id: TravelMode; label: string }[] = [
+  { id: 'drive', label: 'Car' },
+  { id: 'walk', label: 'Walk' },
+  { id: 'transit', label: 'Bus or train' },
+  { id: 'bike', label: 'Bike' },
+];
+
 export default function Places() {
-  const { state } = useStore();
+  const { state, updateSettings } = useStore();
   const geo = useGeo();
   const c = useColors();
   const now = useNow(60000);
@@ -136,6 +144,17 @@ export default function Places() {
         <T v="caption" muted>
           {"If you stop in another supermarket with things on your list, Focus asks once. To check, it sends Google where you're standing, only then, at most a few times a day."}
         </T>
+      </Card>
+
+      <Card style={{ gap: space[2] }}>
+        <T v="bodyStrong">How you get around</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+          {TRAVEL_MODES.map((m) => (
+            <Button key={m.id} small kind={(state.settings.travelMode ?? 'drive') === m.id ? 'primary' : 'soft'} label={m.label} onPress={() => updateSettings({ travelMode: m.id })} />
+          ))}
+        </View>
+        <T v="caption" muted>{liveStatusLine(geo.liveStatus, now)}</T>
+        <T v="caption" muted>For trips to your nursery or school, Focus asks Google how long it takes right now, and only sends the two places.</T>
       </Card>
 
       <Section title="More">

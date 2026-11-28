@@ -4,6 +4,7 @@
 //   { action: 'suggest', q, session, near? }  -> { results: [{ placeId, name, address }] }
 //   { action: 'place', placeId, session }      -> { place: { address, lat, lon } }
 //   { action: 'nearby-shop', lat, lon }        -> { shop: { name } | null }   ("any supermarket", off by default)
+//   { action: 'route', from, to, mode }        -> { route: { min, usualMin } | null }   (live traffic, Routes API)
 // `session` is one Google session token per search, so typing plus one pick is billed as one session.
 // The pick asks Google for formattedAddress and location only (the Essentials price). The name comes from the
 // suggestion, never from Google's displayName, which would put the whole session on a dearer price.
@@ -20,6 +21,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const AUTOCOMPLETE = 'https://places.googleapis.com/v1/places:autocomplete';
 const DETAILS = 'https://places.googleapis.com/v1/places/';
 const NEARBY = 'https://places.googleapis.com/v1/places:searchNearby';
+const ROUTES = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
 /** Per person, at most one call every 0.25 s and 60 a minute. Google's daily quota is the hard stop. */
 const MIN_GAP_MS = 250;
@@ -121,6 +123,32 @@ Deno.serve(async (req) => {
     if (g instanceof Response) return g;
     const name = g?.places?.[0]?.displayName?.text;
     return json({ shop: typeof name === 'string' && name ? { name: name.slice(0, 80) } : null });
+  }
+
+  if (body?.action === 'route') {
+    // Live travel time for one trip (brief 1b Fix 3). Only the two points come in, rounded to about
+    // 10 m: nothing about her. Driving asks for traffic (TRAFFIC_AWARE, not the dearer _OPTIMAL);
+    // walking, cycling and buses get a plain route, as traffic doesn't apply.
+    const pt = (p: any) => {
+      const lat = Math.round(Number(p?.lat) * 10000) / 10000;
+      const lon = Math.round(Number(p?.lon) * 10000) / 10000;
+      return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { latitude: lat, longitude: lon } : null;
+    };
+    const from = pt(body?.from);
+    const to = pt(body?.to);
+    if (!from || !to) return json({ error: 'Bad request' }, 400);
+    const MODES: Record<string, string> = { drive: 'DRIVE', walk: 'WALK', bike: 'BICYCLE', transit: 'TRANSIT' };
+    const travelMode = MODES[String(body?.mode)] ?? 'DRIVE';
+    const request: Record<string, unknown> = { origin: { location: { latLng: from } }, destination: { location: { latLng: to } }, travelMode, languageCode: 'en-GB', units: 'METRIC' };
+    if (travelMode === 'DRIVE') request.routingPreference = 'TRAFFIC_AWARE';
+    const g = await google(ROUTES, { method: 'POST', body: JSON.stringify(request) }, key, 'routes.duration,routes.staticDuration');
+    if (g instanceof Response) return g;
+    const secs = (s: unknown) => (typeof s === 'string' && /^\d+(\.\d+)?s$/.test(s) ? Number(s.slice(0, -1)) : NaN);
+    const r = g?.routes?.[0];
+    const d = secs(r?.duration);
+    const st = secs(r?.staticDuration);
+    if (!Number.isFinite(d)) return json({ route: null });
+    return json({ route: { min: Math.round(d / 60), usualMin: Math.round((Number.isFinite(st) ? st : d) / 60) } });
   }
 
   const session = String(body?.session ?? '');

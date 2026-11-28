@@ -16,6 +16,8 @@ export type PlaceTypeInfo = {
   behaviours: Behaviour[];
   /** Asked for by type in setup and on the Places list, until she has one or skips it. */
   ask?: { question: string; about: string };
+  /** Still here in the evening: Focus asks once if she's staying the night (away mode). */
+  awayAsk?: boolean;
 };
 
 /** In the order they're asked for. */
@@ -45,9 +47,9 @@ export const PLACE_TYPES: PlaceTypeInfo[] = [
     behaviours: ['leave-by', 'linked-tasks', 'reminders'],
     ask: { question: 'Is there a nursery or school you do drop off at?', about: 'Focus works out when to leave, and shows anything you need to tell them.' },
   },
-  { id: 'family', label: 'Family', icon: 'users', radiusM: 120, behaviours: ['linked-tasks', 'reminders'] },
+  { id: 'family', label: 'Family', icon: 'users', radiusM: 120, behaviours: ['linked-tasks', 'reminders'], awayAsk: true },
   { id: 'gym', label: 'Gym', icon: 'activity', radiusM: 120, behaviours: ['gym-tick', 'reminders'] },
-  { id: 'other', label: 'Other', icon: 'map-pin', radiusM: 120, behaviours: ['linked-tasks', 'reminders'] },
+  { id: 'other', label: 'Other', icon: 'map-pin', radiusM: 120, behaviours: ['linked-tasks', 'reminders'], awayAsk: true },
 ];
 
 export const typeInfo = (t: PlaceType): PlaceTypeInfo => PLACE_TYPES.find((x) => x.id === t) ?? PLACE_TYPES[PLACE_TYPES.length - 1];

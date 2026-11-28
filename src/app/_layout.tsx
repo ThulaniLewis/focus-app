@@ -95,10 +95,15 @@ function RoomLinks() {
   useEffect(() => {
     const go = (url: string | null) => {
       // Place pop-ups: the shopping list (focus://space/<id>), a place's reminders and the work routine.
-      const placeLink = url?.match(/^[a-z0-9+.-]*focus:\/{0,3}(space|place-reminder|work)\/([^/?#]+)/i);
+      const placeLink = url?.match(/^[a-z0-9+.-]*focus:\/{0,3}(space|place-reminder|work|grab|away)\/([^/?#]+)(\?left=1)?/i);
       if (placeLink) {
-        const to = `/${placeLink[1].toLowerCase()}/${decodeURIComponent(placeLink[2])}`;
+        const to = `/${placeLink[1].toLowerCase()}/${decodeURIComponent(placeLink[2])}${placeLink[3] ?? ''}`;
         setTimeout(() => router.navigate(to as any), 50);
+        return;
+      }
+      // Live traffic's alarm style alert: Today, where the move and its Undo are.
+      if (url && /focus:\/{0,3}live\b/i.test(url)) {
+        setTimeout(() => router.navigate('/'), 50);
         return;
       }
       const room = roomFromLink(url);
@@ -186,7 +191,22 @@ function NotificationLinks() {
       }).catch(() => go(r));
     };
     const go = (r: Notifications.NotificationResponse) => {
-      const data = r.notification.request.content.data as { taskId?: string; day?: string; roundRoom?: string; open?: string; placeId?: string; warn?: string } | undefined;
+      const data = r.notification.request.content.data as { taskId?: string; day?: string; roundRoom?: string; open?: string; placeId?: string; warn?: string; listId?: string; left?: string } | undefined;
+      // A grab list (arriving, or "You left without …"), or away mode's questions and card.
+      if (data?.open === 'grab' && data.listId) {
+        const to = `/grab/${data.listId}${data.left ? '?left=1' : ''}`;
+        setTimeout(() => router.navigate(to as any), 300);
+        return;
+      }
+      if (data?.open === 'live') {
+        setTimeout(() => router.navigate('/'), 300);
+        return;
+      }
+      if (data?.open === 'away' && data.placeId) {
+        const to = `/away/${data.placeId}`;
+        setTimeout(() => router.navigate(to as any), 300);
+        return;
+      }
       // A place reminder, its "Did you …?", the day-before warning, or the work routine.
       if ((data?.open === 'place-reminder' || data?.open === 'work') && data.placeId) {
         const to = data.open === 'work' ? `/work/${data.placeId}` : `/place-reminder/${data.placeId}${data.warn ? `?warn=${encodeURIComponent(data.warn)}` : ''}`;

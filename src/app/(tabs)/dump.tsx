@@ -15,12 +15,13 @@ import { useStore } from '../../lib/store';
 import { space, useColors } from '../../theme';
 import { dayKey, fmtTime, parseLocal } from '../../lib/time';
 import { DAY_SHORT } from '../../lib/views';
-import { PlaceReminderCheck, type ReminderAnswer } from '../../components/PlaceReminderCheck';
+import { Folded, PlaceReminderCheck, type ReminderAnswer } from '../../components/PlaceReminderCheck';
 import { featureOn } from '../../lib/features';
 import { addGrabList, addReminder, linkTask, setAway, useGeo } from '../../lib/geoStore';
 import { useDiary } from '../../lib/calendar';
 import { dumpContext } from '../../lib/dumpContext';
 import type { SuggestedAway, SuggestedGrabList } from '../../lib/dumpShapes';
+import { showWhenLine } from '../../lib/grabLists';
 import { LinkCheck, type LinkAnswer } from '../../components/LinkedTasks';
 import { suggestLink } from '../../lib/placeLinks';
 import type { SuggestedReminder } from '../../lib/placeTalk';
@@ -63,7 +64,8 @@ export default function Dump() {
   // Tasks that name one of her places: "Link this to …?" Yes, change or no. By item index.
   const [links, setLinks] = useState<Record<number, { placeId: string; answer: LinkAnswer }>>({});
   // Brief 4: one list for one trip, and away from home. Phone only, like places.
-  const [grabs, setGrabs] = useState<(Omit<SuggestedGrabList, 'items'> & { keep: boolean; items: { text: string; ifFound?: boolean; keep: boolean }[] })[]>([]);
+  // where: the one question for the whole list, "Show you this list when you get home?" (null until she answers).
+  const [grabs, setGrabs] = useState<(Omit<SuggestedGrabList, 'items'> & { keep: boolean; where: 'yes' | 'no' | null; items: { text: string; ifFound?: boolean; keep: boolean }[] })[]>([]);
   const [away, setAwayPick] = useState<(SuggestedAway & { keep: boolean }) | null>(null);
   const { events: phoneEvents } = useDiary(state.settings.readCalendar, 2);
 
@@ -77,7 +79,7 @@ export default function Dump() {
       if (hit) sug[i] = { placeId: hit.id, answer: null };
     });
     setLinks(sug);
-    setGrabs(r.grabLists.map((g) => ({ ...g, keep: true, items: g.items.map((i) => ({ ...i, keep: true })) })));
+    setGrabs(r.grabLists.map((g) => ({ ...g, keep: true, where: null, items: g.items.map((i) => ({ ...i, keep: true })) })));
     setAwayPick(r.away ? { ...r.away, keep: true } : null);
     const titleOf = (id: string) => state.tasks.find((t) => t.id === id)?.title ?? 'A job';
     setJobMarks([
@@ -136,7 +138,7 @@ export default function Dump() {
     setAwayPick(null);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!result) return;
     const kept0 = items.filter((i) => i.keep);
     const titleOf = (id: string) => state.tasks.find((t) => t.id === id);
@@ -177,9 +179,15 @@ export default function Dump() {
         });
       }
     });
+    let openNow: string | null = null;
     for (const g of grabs.filter((x) => x.keep)) {
       const items = g.items.filter((i) => i.keep).map(({ keep, ...i }) => i);
-      if (items.length) addGrabList({ title: g.title, placeId: g.placeId, items }).catch(() => {});
+      if (!items.length) continue;
+      // The place shows already filled in, so Add with no answer keeps it; No keeps the list on Today only.
+      const placeId = g.where === 'no' ? undefined : g.placeId;
+      const saved = await addGrabList({ title: g.title, placeId, items }).catch(() => null);
+      // She's already there: show it straight away.
+      if (saved?.hereNow && !openNow) openNow = saved.id;
     }
     if (away?.keep) {
       const { keep, ...a } = away;
@@ -190,8 +198,15 @@ export default function Dump() {
       addReminder(rem).catch(() => {});
     }
     reset();
-    router.navigate('/');
+    router.navigate(openNow ? (`/grab/${openNow}` as any) : '/');
   };
+
+  const pickGrabPlace = (gi: number) =>
+    showSheet({
+      title: 'Show this list at',
+      message: grabs[gi]?.title,
+      options: places.map((p) => ({ label: p.name, icon: 'map-pin', onPress: () => setGrabs((cur) => cur.map((x, j) => (j === gi ? { ...x, placeId: p.id, where: 'yes' } : x))) })),
+    });
 
   const moveItem = (i: number) => {
     const choices = state.spaces.filter((s) => s.kind !== 'shopping' || items[i].kind === 'buy');
@@ -254,9 +269,25 @@ export default function Dump() {
               <View style={{ flex: 1 }}>
                 <T v="label" muted>GRAB LIST</T>
                 <T v="heading">{g.title}</T>
-                {g.placeId ? <T v="caption" muted>{`For ${places.find((p) => p.id === g.placeId)?.name ?? 'a place'}. Stays on this phone.`}</T> : <T v="caption" muted>Stays on this phone.</T>}
+                <T v="caption" muted>Stays on this phone.</T>
               </View>
             </View>
+            {(() => {
+              const gp = g.placeId ? places.find((p) => p.id === g.placeId) : undefined;
+              const setWhere = (w: 'yes' | 'no' | null) => setGrabs((cur) => cur.map((x, j) => (j === gi ? { ...x, where: w } : x)));
+              if (!gp) return places.length ? <Button small kind="quiet" label="Show it at a place" onPress={() => pickGrabPlace(gi)} /> : null;
+              if (g.where) return <Folded text={g.where === 'yes' ? `Shows when you get to ${gp.type === 'home' ? 'home' : gp.name}.` : 'Stays at the top of Today.'} onUndo={() => setWhere(null)} />;
+              return (
+                <View style={{ gap: space[2], paddingVertical: space[2] }}>
+                  <T v="bodyStrong">{showWhenLine(gp)}</T>
+                  <View style={{ flexDirection: 'row', gap: space[2] }}>
+                    <View style={{ flex: 1 }}><Button small label="Yes" onPress={() => setWhere('yes')} /></View>
+                    <View style={{ flex: 1 }}><Button small kind="soft" label="Change" onPress={() => pickGrabPlace(gi)} /></View>
+                    <View style={{ flex: 1 }}><Button small kind="outline" label="No" onPress={() => setWhere('no')} /></View>
+                  </View>
+                </View>
+              );
+            })()}
             {g.items.map((it, ii) => (
               <View key={ii} style={{ flexDirection: 'row', gap: space[3], alignItems: 'center', minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line }}>
                 <Check on={it.keep} onPress={() => setGrabs((cur) => cur.map((x, j) => (j === gi ? { ...x, items: x.items.map((y, k) => (k === ii ? { ...y, keep: !y.keep } : y)) } : x)))} label={it.text} />

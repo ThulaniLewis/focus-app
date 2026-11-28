@@ -8,8 +8,9 @@
 import type { State } from './types';
 
 import { askLine, cleanLink, didLine, type LinkedTask, type TaskLink } from './placeLinks';
-import { type Away, cleanAwayRecord, cleanGrabList, type GrabList } from './grabLists';
+import { arriveLine, type Away, awayNow, cleanAwayRecord, cleanGrabList, type GrabList, grabsFor, leftLine, unticked } from './grabLists';
 import { type Behaviour, cleanType, does, type PlaceType, typeInfo } from './placeTypes';
+import { cleanLive, type LiveStatus, type LiveTrip } from './liveTraffic';
 
 export { PLACE_TYPES, type Behaviour, type PlaceType } from './placeTypes';
 
@@ -81,6 +82,12 @@ export type GeoData = {
   grabLists: GrabList[];
   /** Away from home tonight (brief 4). Phone only, never on the tablet, never read aloud. */
   away: Away | null;
+  /** The "staying tonight?" question waiting to go off: "placeId|YYYY-MM-DD". */
+  awayAsk?: string | null;
+  /** Live traffic checks for today's trips (brief 1b Fix 3). Phone only. */
+  live?: LiveTrip[];
+  /** Last time Google answered, or didn't. */
+  liveStatus?: LiveStatus;
   /** Off by default: ask about the list in any supermarket, not just hers. */
   anySupermarket: boolean;
   /** Tasks to tick when Focus next opens (the gym), as the background can't change the main data. */
@@ -197,7 +204,12 @@ export function observe(data: GeoData, obs: Fix | FenceEvent): { data: GeoData; 
 
 // ---------- What happens on arrival and departure ----------
 
-export type NoticeOpen = { to: 'shopping' } | { to: 'reminders'; placeId: string } | { to: 'work'; placeId: string };
+export type NoticeOpen =
+  | { to: 'shopping' }
+  | { to: 'reminders'; placeId: string }
+  | { to: 'work'; placeId: string }
+  | { to: 'grab'; listId: string; left?: boolean }
+  | { to: 'away'; placeId: string };
 export type PlaceNotice = { kind: 'notify' | 'full-screen'; id: string; title: string; body: string; open: NoticeOpen };
 
 /** Up to five things, then "and 3 more". */
@@ -255,6 +267,8 @@ export function placeActions(
   let reminders = data.reminders;
   let links = data.links;
   let ticks = data.ticks;
+  let grabLists = data.grabLists;
+  let away = data.away;
   const mark = (ids: Set<string>, field: 'shownAt' | 'nudgedAt') => {
     reminders = reminders.map((r) => (ids.has(r.id) ? { ...r, [field]: now.toISOString() } : r));
   };
@@ -267,6 +281,13 @@ export function placeActions(
     if (!place) continue;
     const at = new Date(e.at);
     if (e.event === 'arrive') {
+      // Home again: away mode ends, and any grab list for home shows first.
+      if (place.type === 'home' && awayNow(away)) away = { ...away!, endedAt: e.at };
+      for (const g of grabsFor(grabLists, place.id)) {
+        if (!unticked(g).length) continue;
+        notices.push({ kind: 'full-screen', id: `grab-${g.id}-${e.at}`, title: arriveLine(place), body: listLine(unticked(g).map((i) => i.text)), open: { to: 'grab', listId: g.id } });
+        grabLists = grabLists.map((x) => (x.id === g.id ? { ...x, shownAt: now.toISOString() } : x));
+      }
       if (does(place, 'offer-shopping-list') && shopping.length) {
         const n = shopping.length;
         notices.push({ kind: 'full-screen', id: `arrive-${place.id}-${e.at}`, title: 'Do you want to see your shopping list?', body: `${n} ${n === 1 ? 'thing' : 'things'} on it.`, open: { to: 'shopping' } });
@@ -296,6 +317,12 @@ export function placeActions(
       if (dueTasks.length) markLinks(new Set(dueTasks.map((t) => t.id)), 'shownAt');
     }
     if (e.event === 'leave') {
+      // A grab list shown here, with things not ticked: one "You left without …", never more.
+      for (const g of grabsFor(grabLists, place.id)) {
+        if (!g.shownAt || !unticked(g).length || (g.nudgedAt && g.nudgedAt >= g.shownAt)) continue;
+        notices.push({ kind: 'notify', id: `grab-left-${g.id}-${e.at}`, title: leftLine(g), body: "Tap for Done, Forgot or Didn't need.", open: { to: 'grab', listId: g.id, left: true } });
+        grabLists = grabLists.map((x) => (x.id === g.id ? { ...x, nudgedAt: now.toISOString() } : x));
+      }
       // Shown this visit, not answered, not asked about yet: one "Did you …?" covering all of them, never more.
       const leftRems = remOn ? reminders.filter((r) => r.placeId === place.id && r.when === 'arrive' && !r.every && !r.doneAt && !!r.shownAt && (!r.nudgedAt || r.nudgedAt < r.shownAt)) : [];
       const leftTasks = open.filter((t) => {
@@ -316,8 +343,8 @@ export function placeActions(
       }
     }
   }
-  const changed = reminders !== data.reminders || ticks !== data.ticks || links !== data.links;
-  return { data: changed ? { ...data, reminders, links, ticks } : data, notices };
+  const changed = reminders !== data.reminders || ticks !== data.ticks || links !== data.links || grabLists !== data.grabLists || away !== data.away;
+  return { data: changed ? { ...data, reminders, links, ticks, grabLists, away } : data, notices };
 }
 
 // ---------- Any supermarket (off by default) ----------
@@ -467,6 +494,9 @@ export function parseGeo(raw: unknown): GeoData {
   const ticks = Array.isArray(s.ticks) ? s.ticks.filter((t: any) => t && typeof t.taskId === 'string' && typeof t.day === 'string') : [];
   const still = s.still && Number.isFinite(s.still.lat) && Number.isFinite(s.still.lon) && typeof s.still.since === 'string' ? s.still : null;
   const lookups = s.lookups && typeof s.lookups.day === 'string' && Number.isFinite(s.lookups.n) ? s.lookups : undefined;
+  const awayAsk = typeof s.awayAsk === 'string' ? s.awayAsk : null;
+  const live = cleanLive(s.live, new Date());
+  const liveStatus = s.liveStatus && typeof s.liveStatus.at === 'string' ? { at: s.liveStatus.at, ok: s.liveStatus.ok === true } : undefined;
   const skipped = Array.isArray(s.skipped) ? s.skipped.filter((t: unknown) => typeof t === 'string').map(cleanType) : [];
-  return { places, presence, log, reminders, links, grabLists, away, anySupermarket: s.anySupermarket === true, ticks, ...(still ? { still } : {}), ...(lookups ? { lookups } : {}), ...(skipped.length ? { skipped } : {}) };
+  return { places, presence, log, reminders, links, grabLists, away, anySupermarket: s.anySupermarket === true, ticks, ...(still ? { still } : {}), ...(lookups ? { lookups } : {}), ...(skipped.length ? { skipped } : {}), ...(awayAsk ? { awayAsk } : {}), ...(live.length ? { live } : {}), ...(liveStatus ? { liveStatus } : {}) };
 }

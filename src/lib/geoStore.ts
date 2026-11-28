@@ -5,7 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 import { EMPTY_GEO, type GeoData, type GeoPlace, parseGeo, type PlaceReminder } from './geo';
 import type { SuggestedAway, SuggestedGrabList } from './dumpShapes';
-import { newGrabList, tickGrabItem } from './grabLists';
+import { finishGrab, newGrabList, tickGrabItem } from './grabLists';
+import { addNight } from './awayMode';
 
 export const GEO_KEY = 'focus.places.v1';
 
@@ -103,7 +104,20 @@ export const answerLink = (taskId: string, answer: 'not-yet' | 'not-today', day:
 
 /** "Not for me" on a key place question, or ask again. */
 /** Grab lists (brief 4). */
-export const addGrabList = (s: SuggestedGrabList) => updateGeo((d) => ({ ...d, grabLists: [...d.grabLists.filter((g) => !g.closedAt).slice(-9), newGrabList(s, new Date())] }));
+/** Save a grab list (after Add). Returns its id; if she's at its place now, it counts as shown already. */
+export async function addGrabList(s: SuggestedGrabList): Promise<{ id: string; hereNow: boolean }> {
+  let out = { id: '', hereNow: false };
+  await updateGeo((d) => {
+    const hereNow = !!s.placeId && d.presence.placeId === s.placeId;
+    const g = newGrabList(s, new Date(), hereNow);
+    out = { id: g.id, hereNow };
+    return { ...d, grabLists: [...d.grabLists.filter((x) => !x.closedAt).slice(-9), g] };
+  });
+  return out;
+}
+/** The leaving nudge's answers: Done (got them), Forgot (keep it for next time), Didn't need. */
+export const finishGrabList = (listId: string, how: 'got' | 'forgot' | 'not-needed') =>
+  updateGeo((d) => ({ ...d, grabLists: d.grabLists.map((g) => (g.id === listId ? finishGrab(g, how, new Date()) : g)) }));
 export const tickGrab = (listId: string, itemId: string) =>
   updateGeo((d) => ({ ...d, grabLists: d.grabLists.map((g) => (g.id === listId ? tickGrabItem(g, itemId, new Date()) : g)) }));
 /** Done (or close it): it leaves nothing behind on Today. */
@@ -112,7 +126,16 @@ export const closeGrabList = (listId: string) =>
 
 /** Away from home (brief 4). Null ends it. */
 export const setAway = (a: SuggestedAway | null) =>
-  updateGeo((d) => ({ ...d, away: a ? { ...a, since: new Date().toISOString() } : d.away ? { ...d.away, endedAt: new Date().toISOString() } : null }));
+  updateGeo((d) => ({ ...d, away: a ? addNight({ ...a, since: new Date().toISOString() }, dayOf(new Date())) : d.away && !d.away.endedAt ? { ...d.away, endedAt: new Date().toISOString() } : d.away }));
+/** Yes to "Still away tonight?". */
+export const awayTonight = (day: string) => updateGeo((d) => (d.away && !d.away.endedAt ? { ...d, away: addNight(d.away, day) } : d));
+/** The evening question was put to her (or taken back on leaving), so it's asked once. */
+export const markAwayAsk = (key: string | null) => updateGeo((d) => ({ ...d, awayAsk: key }));
+const pad = (n: number) => String(n).padStart(2, '0');
+const dayOf = (x: Date) => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
+
+/** Undo a live traffic move: the usual leave-by, and the jobs back where they were. */
+export const undoLive = (key: string) => updateGeo((d) => ({ ...d, live: (d.live ?? []).map((r) => (r.key === key ? { ...r, undone: true } : r)) }));
 
 export const skipType = (type: GeoPlace['type'], skip: boolean) =>
   updateGeo((d) => ({ ...d, skipped: skip ? [...new Set([...(d.skipped ?? []), type])] : (d.skipped ?? []).filter((x) => x !== type) }));
@@ -137,6 +160,8 @@ const subscribe = (l: () => void) => {
   };
 };
 const snapshot = () => current;
+/** The phone's places data as last read, for planning nudges outside React. */
+export const geoSnapshot = () => current;
 
 /** The places, where she is and the log: re-renders when any of it changes. */
 export function useGeo(): GeoData {

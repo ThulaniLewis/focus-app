@@ -24,7 +24,7 @@ export const SHAPES: Shape[] = [
     id: 'grab-list',
     name: 'Grab list',
     when: 'she wants help remembering what to get, bring, collect or pack for one trip or one place ("help me remember what I need from home", "I need to pick up…").',
-    gets: 'One checklist with one short title from what she said ("Grab from home"), tied to the place it is for. Every thing to fetch is one item on the list, not a task. No spaces, no rooms, no time estimates. If she says "if I can find it" or "maybe", set if_found on that item.',
+    gets: 'One checklist with one short title from what she said ("Grab from home"), tied to the place it is for (place_id). Pick the place from what she said and from where she is now: the place she is going to fetch things from. Never a place the dump rules out (a nursery or school when her child is not going, or on a weekend). Every thing to fetch is one item on the list, not a task. No spaces, no rooms, no time estimates. If she says "if I can find it" or "maybe", set if_found on that item.',
     field: 'grab_lists',
     phoneOnly: true,
   },
@@ -145,7 +145,11 @@ export function cleanGrabLists(raw: unknown, places: GeoPlace[]): SuggestedGrabL
       items.push({ text: t, ...(it?.if_found === true ? { ifFound: true } : {}) });
     }
     if (!items.length) continue;
-    out.push({ title: cap(tidy(g.title, 60)), ...(typeof g.place_id === 'string' && ids.has(g.place_id) ? { placeId: g.place_id } : {}), items: items.slice(0, 40) });
+    const title = cap(tidy(g.title, 60));
+    // No place given but the title says home ("Grab from home"): her home place.
+    const home = /\bhome\b/i.test(title) ? places.find((p) => p.type === 'home') : undefined;
+    const placeId = typeof g.place_id === 'string' && ids.has(g.place_id) ? g.place_id : home?.id;
+    out.push({ title, ...(placeId ? { placeId } : {}), items: items.slice(0, 40) });
   }
   return out.slice(0, 3);
 }
