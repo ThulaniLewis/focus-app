@@ -6,11 +6,11 @@ All three fixes are built. Fixes 1 and 2 are tested on the phone. Fix 3 (live tr
 
 Typing an address found nothing because **Photon, the old free search, wouldn't answer Supabase's servers**. Supabase's request log showed the phone's searches did get past the sign-in check. The app also hid the error in small red text. The fix moved search to Google Places (New), which goes through `focus-places`, and made failed searches show a clear message.
 
-## Google Cloud setup (Routes API needs one step from you)
+## Google Cloud setup (Routes API is enabled)
 
 The key Focus already uses for Places, `GOOGLE_MAPS_API_KEY` in Supabase secrets, does the routes too, so there's nothing new to paste in. In the Google Cloud console, in the same project:
 
-1. **APIs & Services › Library:** search for **Routes API** and click **Enable**. Until you do, live traffic checks fail quietly and Focus uses your usual travel times. The Places screen says "Live traffic couldn't be reached…".
+1. **APIs & Services › Library:** **Routes API** is enabled (done 28 Nov). If it's ever turned off, live traffic checks fail quietly and Focus uses your usual travel times. The Places screen says "Live traffic couldn't be reached…".
 2. **APIs & Services › Credentials:** open the key, go to **API restrictions › Restrict key**, and tick **Places API (New)** and **Routes API** only. Leave **Application restrictions** set to None. The key is only ever used from Supabase's servers, never from the phone, so an app or website restriction would block it.
 3. **APIs & Services › Routes API › Quotas:** set requests per day to **100**. A normal day uses about 8. Keep the Places API daily cap you already set.
 4. **Billing › Budgets & alerts:** keep a monthly budget of **£5** with alerts at 50%, 90% and 100%. If you never set one, set it now.
@@ -34,13 +34,12 @@ Traffic-aware routes are, I believe, billed as **Compute Routes Pro**: 5,000 fre
 
 **One nursery run (a weekday):**
 1. In Settings › Places, check your nursery place has its drop off trip linked ("Drop off 08:00 … Focus works out when to leave"). Check **How you get around** is set to Car.
-2. Enable the Routes API (step 1 above) the night before.
-3. Leave Focus closed. About an hour before your leave-by time, nothing should come if traffic is normal.
-4. If traffic is heavy you get one message, for example "I've moved leaving for … to 07:27. Traffic is heavier than usual, so it's 28 minutes today instead of 15." Any job before it says where it moved to. Today shows a **Live traffic** card with **Undo**.
-5. Tap Undo once to check it puts the usual time back. You get no more messages about that trip.
-6. Leave home: one more check, and no message unless it changed by more than 5 minutes.
-7. Arrive at nursery: the arrival card asks about linked tasks and reminders, as now.
-8. Afterwards: Places › How you get around should say "Live traffic: last checked …".
+2. Leave Focus closed. About an hour before your leave-by time, nothing should come if traffic is normal.
+3. If traffic is heavy you get one message, for example "I've moved leaving for … to 07:27. Traffic is heavier than usual, so it's 28 minutes today instead of 15." Any job before it says where it moved to. Today shows a **Live traffic** card with **Undo**.
+4. Tap Undo once to check it puts the usual time back. You get no more messages about that trip.
+5. Leave home: one more check, and no message unless it changed by more than 5 minutes.
+6. Arrive at nursery: the arrival card asks about linked tasks and reminders, as now.
+7. Afterwards: Places › How you get around should say "Live traffic: last checked …".
 
 **One office day:**
 1. Arrive at the office: the work routine card shows today's meetings, your work list and the leave-by time for the next fixed thing, such as pick up.
